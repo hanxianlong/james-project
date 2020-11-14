@@ -71,12 +71,10 @@ public class ToSenderFolder extends GenericMailet {
      */
     @Override
     public void service(Mail mail) throws MessagingException {
-        if (!mail.getState().equals(Mail.GHOST)) {
-            doService(mail);
-            if (consume) {
-                mail.setState(Mail.GHOST);
-            }
-        }
+	    doService(mail);
+	    if (consume) {
+		    mail.setState(Mail.GHOST);
+	    }
     }
 
     private void doService(Mail mail) throws MessagingException {
