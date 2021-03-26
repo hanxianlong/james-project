@@ -21,12 +21,13 @@ package org.apache.james.jmap.json
 
 import eu.timepit.refined.auto._
 import net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson
+import org.apache.james.jmap.core.ResponseObject.SESSION_STATE
+import org.apache.james.jmap.core.{AccountId, Properties, State}
 import org.apache.james.jmap.json.Fixture.id
 import org.apache.james.jmap.json.VacationResponseGetSerializationTest.{ACCOUNT_ID, PROPERTIES, SINGLETON_ID}
 import org.apache.james.jmap.json.VacationResponseSerializationTest.VACATION_RESPONSE
-import org.apache.james.jmap.mail.VacationResponse.UnparsedVacationResponseId
-import org.apache.james.jmap.mail.{VacationResponse, VacationResponseGetRequest, VacationResponseGetResponse, VacationResponseIds, VacationResponseNotFound}
-import org.apache.james.jmap.model.{AccountId, Properties}
+import org.apache.james.jmap.vacation.VacationResponse.UnparsedVacationResponseId
+import org.apache.james.jmap.vacation.{VacationResponse, VacationResponseGetRequest, VacationResponseGetResponse, VacationResponseIds, VacationResponseNotFound}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import play.api.libs.json.{JsSuccess, Json}
@@ -153,15 +154,15 @@ class VacationResponseGetSerializationTest extends AnyWordSpec with Matchers {
     "succeed" in {
       val actualValue: VacationResponseGetResponse = VacationResponseGetResponse(
         accountId = ACCOUNT_ID,
-        state = "75128aab4b1b",
+        state = State.INSTANCE,
         list = List(VACATION_RESPONSE),
         notFound = VacationResponseNotFound(Set("randomId1", "randomId2")))
 
       val expectedJson: String =
-        """
+        s"""
           |{
           |  "accountId": "aHR0cHM6Ly93d3cuYmFzZTY0ZW5jb2RlLm9yZy8",
-          |  "state": "75128aab4b1b",
+          |  "state": "${SESSION_STATE.value}",
           |  "list": [{
           |    "id":"singleton",
           |    "isEnabled":true,
@@ -175,7 +176,7 @@ class VacationResponseGetSerializationTest extends AnyWordSpec with Matchers {
           |}
           |""".stripMargin
 
-      assertThatJson(Json.stringify(VacationSerializer.serialize(actualValue)(VacationSerializer.vacationResponseWrites(VacationResponse.allProperties)))).isEqualTo(expectedJson)
+      assertThatJson(Json.stringify(VacationSerializer.serialize(actualValue, VacationResponse.allProperties))).isEqualTo(expectedJson)
     }
   }
 }

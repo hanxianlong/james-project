@@ -32,6 +32,7 @@ import org.apache.james.mailbox.exception.BadCredentialsException;
 import org.apache.james.mailbox.exception.MailboxException;
 import org.apache.james.mailbox.model.MailboxId;
 import org.apache.james.mailbox.model.MailboxPath;
+import org.apache.james.metrics.api.MetricFactory;
 import org.apache.james.pop3server.mailbox.MailboxAdapter;
 import org.apache.james.protocols.api.Request;
 import org.apache.james.protocols.api.Response;
@@ -40,8 +41,11 @@ import org.apache.james.protocols.pop3.POP3Response;
 import org.apache.james.protocols.pop3.POP3Session;
 import org.apache.james.protocols.pop3.core.AbstractPassCmdHandler;
 import org.apache.james.protocols.pop3.mailbox.Mailbox;
+import org.apache.james.util.MDCBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.fge.lambdas.Throwing;
 
 import reactor.core.publisher.Mono;
 
@@ -55,7 +59,8 @@ public class PassCmdHandler extends AbstractPassCmdHandler  {
     private final MailboxManager manager;
 
     @Inject
-    public PassCmdHandler(@Named("mailboxmanager") MailboxManager manager) {
+    public PassCmdHandler(@Named("mailboxmanager") MailboxManager manager, MetricFactory metricFactory) {
+        super(metricFactory);
         this.manager = manager;
     }
 
@@ -71,6 +76,13 @@ public class PassCmdHandler extends AbstractPassCmdHandler  {
 
     @Override
     protected Mailbox auth(POP3Session session, Username username, String password) throws Exception {
+        return MDCBuilder.withMdc(
+            MDCBuilder.create()
+                .addContext(MDCBuilder.USER, username.asString()),
+            Throwing.supplier(() -> auth(session, password)).sneakyThrow());
+    }
+
+    private Mailbox auth(POP3Session session, String password) throws IOException {
         MailboxSession mSession = null;
         try {
             mSession = manager.login(session.getUsername(), password);
@@ -83,8 +95,16 @@ public class PassCmdHandler extends AbstractPassCmdHandler  {
                 LOGGER.info("Provisioning INBOX. {} created.", mailboxId);
             }
             MessageManager mailbox = manager.getMailbox(MailboxPath.inbox(mSession), mSession);
-            return new MailboxAdapter(manager, mailbox, mSession);
+            MailboxAdapter mailboxAdapter = new MailboxAdapter(manager, mailbox, mSession);
+            LOGGER.info("Opening mailbox {} {} with mailbox session {}",
+                mailbox.getId().serialize(),
+                mailbox.getMailboxPath().asString(),
+                mSession.getSessionId().getValue());
+            return mailboxAdapter;
         } catch (BadCredentialsException e) {
+            LOGGER.info("Bad credential supplied for {} with remote address {}",
+                session.getUsername().asString(),
+                session.getRemoteAddress().getAddress());
             return null;
         } catch (MailboxException e) {
             throw new IOException("Unable to access mailbox for user " + session.getUsername().asString(), e);
@@ -93,7 +113,5 @@ public class PassCmdHandler extends AbstractPassCmdHandler  {
                 manager.endProcessingRequest(mSession);
             }
         }
-
     }
-
 }

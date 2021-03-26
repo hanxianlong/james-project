@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.nullValue;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 import org.apache.james.CassandraExtension;
 import org.apache.james.CassandraRabbitMQJamesConfiguration;
@@ -58,6 +58,7 @@ import org.apache.james.core.Username;
 import org.apache.james.jmap.AccessToken;
 import org.apache.james.jmap.draft.JmapGuiceProbe;
 import org.apache.james.junit.categories.BasicFeature;
+import org.apache.james.junit.categories.Unstable;
 import org.apache.james.mailbox.MessageManager.AppendCommand;
 import org.apache.james.mailbox.cassandra.mail.task.MailboxMergingTask;
 import org.apache.james.mailbox.cassandra.table.CassandraMailboxPathV3Table;
@@ -84,7 +85,6 @@ import org.apache.james.webadmin.WebAdminUtils;
 import org.apache.james.webadmin.integration.WebadminIntegrationTestModule;
 import org.apache.james.webadmin.routes.CassandraMailboxMergingRoutes;
 import org.apache.james.webadmin.routes.TasksRoutes;
-import org.awaitility.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -110,7 +110,7 @@ class FixingGhostMailboxTest {
     private static final String ALICE = "alice@" + DOMAIN;
     private static final String ALICE_SECRET = "aliceSecret";
     private static final String BOB_SECRET = "bobSecret";
-    private static final Duration THIRTY_SECONDS = new Duration(30, TimeUnit.SECONDS);
+    private static final Duration THIRTY_SECONDS = Duration.ofSeconds(30);
 
     @RegisterExtension
     static JamesServerExtension testExtension = new JamesServerBuilder<CassandraRabbitMQJamesConfiguration>(tmpDir ->
@@ -242,7 +242,16 @@ class FixingGhostMailboxTest {
                     .body(ARGUMENTS + ".messageIds", contains(message2.getMessageId().serialize())));
     }
 
+
+    /*
+     * 1 expectation failed.
+     * JSON path [0][1].messageIds doesn't match.
+     * Expected: a collection with size <2>
+     *   Actual: [95b42310-47b7-11eb-90b1-f5389ace5056]
+     * https://builds.apache.org/blue/organizations/jenkins/james%2FApacheJames/detail/PR-268/44/tests
+     */
     @Test
+    @Tag(Unstable.TAG)
     void webadminCanMergeTwoMailboxes() {
         MailboxId newAliceInbox = mailboxProbe.getMailboxId(MailboxConstants.USER_NAMESPACE, ALICE, MailboxConstants.INBOX);
 

@@ -20,12 +20,12 @@
 package org.apache.james.jmap.mail
 
 import cats.implicits._
+import org.apache.james.jmap.core.Limit.Limit
+import org.apache.james.jmap.core.Position.Position
+import org.apache.james.jmap.core.{AccountId, CanCalculateChanges, LimitUnparsed, PositionUnparsed, QueryState, UTCDate}
 import org.apache.james.jmap.mail.Email.Size
 import org.apache.james.jmap.mail.IsAscending.ASCENDING
 import org.apache.james.jmap.method.WithAccountId
-import org.apache.james.jmap.model.Limit.Limit
-import org.apache.james.jmap.model.Position.Position
-import org.apache.james.jmap.model.{AccountId, CanCalculateChanges, Keyword, LimitUnparsed, PositionUnparsed, QueryState, UTCDate}
 import org.apache.james.mailbox.model.SearchQuery.Sort.Order.{NATURAL, REVERSE}
 import org.apache.james.mailbox.model.SearchQuery.Sort.SortClause
 import org.apache.james.mailbox.model.{MailboxId, MessageId, SearchQuery}
@@ -35,7 +35,11 @@ case class UnsupportedFilterException(unsupportedFilter: String) extends Unsuppo
 case class UnsupportedNestingException(message: String) extends UnsupportedOperationException
 case class UnsupportedRequestParameterException(unsupportedParam: String) extends UnsupportedOperationException
 
-sealed trait FilterQuery
+sealed trait FilterQuery {
+  def inMailboxFilterOnly: Boolean
+
+  def inMailboxAndAfterFilterOnly: Boolean
+}
 
 sealed trait Operator
 case object And extends Operator
@@ -43,7 +47,11 @@ case object Or extends Operator
 case object Not extends Operator
 
 case class FilterOperator(operator: Operator,
-                          conditions: Seq[FilterQuery]) extends FilterQuery
+                          conditions: Seq[FilterQuery]) extends FilterQuery {
+  override val inMailboxFilterOnly: Boolean = false
+
+  override val inMailboxAndAfterFilterOnly: Boolean = false
+}
 
 case class Text(value: String) extends AnyVal
 case class From(value: String) extends AnyVal
@@ -81,7 +89,35 @@ case class FilterCondition(inMailbox: Option[MailboxId],
                            bcc: Option[Bcc],
                            subject: Option[Subject],
                            header: Option[Header],
-                           body: Option[Body]) extends FilterQuery
+                           body: Option[Body]) extends FilterQuery {
+  private val noOtherFiltersThanInMailboxAndAfter: Boolean = inMailboxOtherThan.isEmpty &&
+    before.isEmpty &&
+    hasKeyword.isEmpty &&
+    notKeyword.isEmpty &&
+    minSize.isEmpty &&
+    maxSize.isEmpty &&
+    hasAttachment.isEmpty &&
+    allInThreadHaveKeyword.isEmpty &&
+    someInThreadHaveKeyword.isEmpty &&
+    noneInThreadHaveKeyword.isEmpty &&
+    text.isEmpty &&
+    from.isEmpty &&
+    to.isEmpty &&
+    cc.isEmpty &&
+    bcc.isEmpty &&
+    subject.isEmpty &&
+    header.isEmpty &&
+    body.isEmpty
+
+  override val inMailboxFilterOnly: Boolean = inMailbox.nonEmpty &&
+    after.isEmpty &&
+    noOtherFiltersThanInMailboxAndAfter
+
+
+  override val inMailboxAndAfterFilterOnly: Boolean = inMailbox.nonEmpty &&
+    after.nonEmpty &&
+    noOtherFiltersThanInMailboxAndAfter
+}
 
 case class EmailQueryRequest(accountId: AccountId,
                              position: Option[PositionUnparsed],
@@ -162,6 +198,10 @@ case class IsAscending(sortByASC: Boolean) extends AnyVal {
 }
 
 case class Collation(value: String) extends AnyVal
+
+object Comparator {
+  val SENT_AT_DESC: Comparator = Comparator(SentAtSortProperty, Some(IsAscending.DESCENDING), None)
+}
 
 case class Comparator(property: SortProperty,
                       isAscending: Option[IsAscending],

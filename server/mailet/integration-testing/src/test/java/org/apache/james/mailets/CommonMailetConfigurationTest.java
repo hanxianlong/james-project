@@ -26,6 +26,7 @@ import static org.apache.james.mailets.configuration.Constants.PASSWORD;
 import static org.apache.james.mailets.configuration.Constants.RECIPIENT;
 import static org.apache.james.mailets.configuration.Constants.awaitAtMostOneMinute;
 
+import java.io.File;
 import java.util.Locale;
 
 import org.apache.james.modules.protocols.ImapGuiceProbe;
@@ -34,25 +35,23 @@ import org.apache.james.probe.DataProbe;
 import org.apache.james.utils.DataProbeImpl;
 import org.apache.james.utils.SMTPMessageSender;
 import org.apache.james.utils.TestIMAPClient;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 
-public class CommonMailetConfigurationTest {
-    @Rule
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
-    @Rule
+class CommonMailetConfigurationTest {
+    @RegisterExtension
     public TestIMAPClient testIMAPClient = new TestIMAPClient();
-    @Rule
+    @RegisterExtension
     public SMTPMessageSender messageSender = new SMTPMessageSender(DEFAULT_DOMAIN);
 
     private TemporaryJamesServer jamesServer;
 
-    @Before
-    public void setup() throws Exception {
-        jamesServer = TemporaryJamesServer.builder().build(temporaryFolder.newFolder());
+    @BeforeEach
+    void setup(@TempDir File temporaryFolder) throws Exception {
+        jamesServer = TemporaryJamesServer.builder().build(temporaryFolder);
         jamesServer.start();
 
         DataProbe dataProbe = jamesServer.getProbe(DataProbeImpl.class);
@@ -60,17 +59,17 @@ public class CommonMailetConfigurationTest {
         dataProbe.addUser(RECIPIENT, PASSWORD);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         jamesServer.shutdown();
     }
 
     @Test
-    public void startingJamesWithCommonMailetConfigurationShouldWork() throws Exception {
+    void startingJamesWithCommonMailetConfigurationShouldWork() {
     }
 
     @Test
-    public void simpleMailShouldBeSent() throws Exception {
+    void simpleMailShouldBeSent() throws Exception {
         messageSender.connect(LOCALHOST_IP, jamesServer.getProbe(SmtpGuiceProbe.class).getSmtpPort())
             .sendMessage(FROM, RECIPIENT);
 
@@ -81,7 +80,7 @@ public class CommonMailetConfigurationTest {
     }
 
     @Test
-    public void simpleMailShouldBeSentToUpperCaseRecipient() throws Exception {
+    void simpleMailShouldBeSentToUpperCaseRecipient() throws Exception {
         messageSender.connect(LOCALHOST_IP, jamesServer.getProbe(SmtpGuiceProbe.class).getSmtpPort())
             .sendMessage(FROM, RECIPIENT.toUpperCase(Locale.US));
 

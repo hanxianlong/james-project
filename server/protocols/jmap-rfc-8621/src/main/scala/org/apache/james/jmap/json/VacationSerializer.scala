@@ -19,12 +19,10 @@
 
 package org.apache.james.jmap.json
 
-import java.time.format.DateTimeFormatter
-
-import org.apache.james.jmap.mail.VacationResponse.{UnparsedVacationResponseId, VACATION_RESPONSE_ID}
-import org.apache.james.jmap.mail.{FromDate, HtmlBody, IsEnabled, Subject, TextBody, ToDate, VacationResponse, VacationResponseGetRequest, VacationResponseGetResponse, VacationResponseId, VacationResponseIds, VacationResponseNotFound}
-import org.apache.james.jmap.model._
-import org.apache.james.jmap.vacation.{VacationResponsePatchObject, VacationResponseSetError, VacationResponseSetRequest, VacationResponseSetResponse, VacationResponseUpdateResponse}
+import org.apache.james.jmap.core.{Properties, State}
+import org.apache.james.jmap.mail.Subject
+import org.apache.james.jmap.vacation.VacationResponse.VACATION_RESPONSE_ID
+import org.apache.james.jmap.vacation.{FromDate, HtmlBody, IsEnabled, TextBody, ToDate, VacationResponse, VacationResponseGetRequest, VacationResponseGetResponse, VacationResponseId, VacationResponseIds, VacationResponseNotFound, VacationResponsePatchObject, VacationResponseSetError, VacationResponseSetRequest, VacationResponseSetResponse, VacationResponseUpdateResponse}
 import play.api.libs.json._
 
 import scala.language.implicitConversions
@@ -41,10 +39,8 @@ object VacationSerializer {
 
   private implicit val vacationResponseSetErrorWrites: Writes[VacationResponseSetError] = Json.writes[VacationResponseSetError]
 
+  private implicit val stateWrites: Writes[State] = Json.valueWrites[State]
   private implicit val vacationResponseSetResponseWrites: Writes[VacationResponseSetResponse] = Json.writes[VacationResponseSetResponse]
-
-  private implicit val utcDateWrites: Writes[UTCDate] =
-    utcDate => JsString(utcDate.asUTC.format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssX")))
 
   private implicit val vacationResponseIdWrites: Writes[VacationResponseId] = _ => JsString(VACATION_RESPONSE_ID.value)
   private implicit val vacationResponseIdReads: Reads[VacationResponseId] = {
@@ -59,29 +55,33 @@ object VacationSerializer {
   private implicit val textBodyWrites: Writes[TextBody] = Json.valueWrites[TextBody]
   private implicit val htmlBodyWrites: Writes[HtmlBody] = Json.valueWrites[HtmlBody]
 
-  implicit def vacationResponseWrites(properties: Properties): Writes[VacationResponse] = Json.writes[VacationResponse]
-    .transform(properties.filter(_))
+  private implicit val vacationResponseWrites: Writes[VacationResponse] = Json.writes[VacationResponse]
 
   private implicit val vacationResponseIdsReads: Reads[VacationResponseIds] = Json.valueReads[VacationResponseIds]
 
   private implicit val vacationResponseGetRequest: Reads[VacationResponseGetRequest] = Json.reads[VacationResponseGetRequest]
 
-  private implicit def vacationResponseNotFoundWrites(implicit idWrites: Writes[UnparsedVacationResponseId]): Writes[VacationResponseNotFound] =
-    notFound => JsArray(notFound.value.toList.map(idWrites.writes))
+  private implicit val vacationResponseNotFoundWrites: Writes[VacationResponseNotFound] =
+    notFound => JsArray(notFound.value.toList.map(id => JsString(id.value)))
 
-  private implicit def vacationResponseGetResponseWrites(implicit vacationResponseWrites: Writes[VacationResponse]): Writes[VacationResponseGetResponse] =
-    Json.writes[VacationResponseGetResponse]
+  private implicit val vacationResponseGetResponseWrites: Writes[VacationResponseGetResponse] = Json.writes[VacationResponseGetResponse]
 
-  private def vacationResponseWritesWithFilteredProperties(properties: Properties): Writes[VacationResponse] =
-    vacationResponseWrites(VacationResponse.propertiesFiltered(properties))
-
-  def serialize(vacationResponse: VacationResponse)(implicit vacationResponseWrites: Writes[VacationResponse]): JsValue = Json.toJson(vacationResponse)
+  def serialize(vacationResponse: VacationResponse): JsValue = Json.toJson(vacationResponse)
 
   def serialize(vacationResponseGetResponse: VacationResponseGetResponse)(implicit vacationResponseWrites: Writes[VacationResponse]): JsValue =
-    Json.toJson(vacationResponseGetResponse)
+    serialize(vacationResponseGetResponse, VacationResponse.allProperties)
 
   def serialize(vacationResponseGetResponse: VacationResponseGetResponse, properties: Properties): JsValue =
-    serialize(vacationResponseGetResponse)(vacationResponseWritesWithFilteredProperties(properties))
+    Json.toJson(vacationResponseGetResponse)
+      .transform((__ \ "list").json.update {
+        case JsArray(underlying) => JsSuccess(JsArray(underlying.map {
+          case jsonObject: JsObject =>
+            VacationResponse.propertiesFiltered(properties)
+              .filter(jsonObject)
+          case jsValue => jsValue
+        }))
+      }).get
+
 
   def serialize(vacationResponseSetResponse: VacationResponseSetResponse): JsValue = Json.toJson(vacationResponseSetResponse)
 

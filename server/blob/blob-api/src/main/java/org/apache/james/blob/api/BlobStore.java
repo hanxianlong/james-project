@@ -23,6 +23,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.reactivestreams.Publisher;
 
+import com.google.common.io.ByteSource;
+
 public interface BlobStore {
 
     enum StoragePolicy {
@@ -34,6 +36,8 @@ public interface BlobStore {
     Publisher<BlobId> save(BucketName bucketName, byte[] data, StoragePolicy storagePolicy);
 
     Publisher<BlobId> save(BucketName bucketName, InputStream data, StoragePolicy storagePolicy);
+
+    Publisher<BlobId> save(BucketName bucketName, ByteSource data, StoragePolicy storagePolicy);
 
     default Publisher<BlobId> save(BucketName bucketName, String data, StoragePolicy storagePolicy) {
         return save(bucketName, data.getBytes(StandardCharsets.UTF_8), storagePolicy);
@@ -55,5 +59,5 @@ public interface BlobStore {
 
     Publisher<Void> deleteBucket(BucketName bucketName);
 
-    Publisher<Void> delete(BucketName bucketName, BlobId blobId);
+    Publisher<Boolean> delete(BucketName bucketName, BlobId blobId);
 }

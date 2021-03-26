@@ -52,6 +52,7 @@ import org.apache.james.core.Username;
 import org.apache.james.dnsservice.api.DNSService;
 import org.apache.james.dnsservice.api.InMemoryDNSService;
 import org.apache.james.domainlist.api.DomainList;
+import org.apache.james.domainlist.lib.DomainListConfiguration;
 import org.apache.james.domainlist.memory.MemoryDomainList;
 import org.apache.james.filesystem.api.FileSystem;
 import org.apache.james.mailrepository.api.MailRepositoryStore;
@@ -86,10 +87,10 @@ import org.apache.james.user.api.UsersRepository;
 import org.apache.james.user.memory.MemoryUsersRepository;
 import org.apache.mailet.Mail;
 import org.jboss.netty.util.HashedWheelTimer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +103,7 @@ public class SMTPServerTest {
     public static final String USER_LOCALHOST = "test_user_smtp@localhost";
     public static final String USER_LOCAL_DOMAIN = "test_user_smtp@example.local";
 
-    final class AlterableDNSServer implements DNSService {
+    final static class AlterableDNSServer implements DNSService {
 
         private InetAddress localhostByName = null;
 
@@ -206,7 +207,7 @@ public class SMTPServerTest {
 
     private SMTPServer smtpServer;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
 
         domainList = new MemoryDomainList(new InMemoryDNSService()
@@ -214,10 +215,11 @@ public class SMTPServerTest {
             .registerMxRecord(LOCAL_DOMAIN, "127.0.0.1")
             .registerMxRecord("examplebis.local", "127.0.0.1")
             .registerMxRecord("127.0.0.1", "127.0.0.1"));
-        domainList.setAutoDetect(false);
-        domainList.setAutoDetectIP(false);
+        domainList.configure(DomainListConfiguration.builder()
+            .autoDetect(false)
+            .autoDetectIp(false)
+            .build());
 
-        domainList.addDomain(Domain.LOCALHOST);
         domainList.addDomain(Domain.of(LOCAL_DOMAIN));
         domainList.addDomain(Domain.of("examplebis.local"));
         usersRepository = MemoryUsersRepository.withVirtualHosting(domainList);
@@ -367,8 +369,8 @@ public class SMTPServerTest {
         }
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    public void tearDown() {
         smtpServer.destroy();
         hashedWheelTimer.stop();
     }
@@ -638,7 +640,7 @@ public class SMTPServerTest {
     }
 
     // FIXME
-    @Ignore
+    @Disabled
     @Test
     public void testEmptyMessageReceivedHeader() throws Exception {
         init(smtpConfiguration);

@@ -22,58 +22,55 @@ package org.apache.james.jmap.json
 import java.io.InputStream
 import java.net.URL
 
+import eu.timepit.refined.refineV
+import io.netty.handler.codec.http.HttpResponseStatus
 import org.apache.james.core.Username
-import org.apache.james.jmap.model
-import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
-import org.apache.james.jmap.model.Invocation.{Arguments, MethodCallId, MethodName}
-import org.apache.james.jmap.model.SetError.SetErrorDescription
-import org.apache.james.jmap.model.{Account, Invocation, Session, _}
+import org.apache.james.jmap.change.{TypeName, TypeState}
+import org.apache.james.jmap.core
+import org.apache.james.jmap.core.CapabilityIdentifier.CapabilityIdentifier
+import org.apache.james.jmap.core.Id.IdConstraint
+import org.apache.james.jmap.core.Invocation.{Arguments, MethodCallId, MethodName}
+import org.apache.james.jmap.core.SetError.SetErrorDescription
+import org.apache.james.jmap.core.{Account, Invocation, Session, _}
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 
 import scala.collection.{Seq => LegacySeq}
 import scala.language.implicitConversions
+import scala.util.Try
 
 object ResponseSerializer {
   // CreateIds
   private implicit val clientIdFormat: Format[ClientId] = Json.valueFormat[ClientId]
   private implicit val serverIdFormat: Format[ServerId] = Json.valueFormat[ServerId]
+
+  private implicit val createdIdsIdWrites: Writes[Map[ClientId, ServerId]] =
+    mapWrites[ClientId, ServerId](_.value.value, serverIdFormat)
+
+  private implicit val createdIdsIdRead: Reads[Map[ClientId, ServerId]] =
+    Reads.mapReads[ClientId, ServerId] { clientIdString => refineV[IdConstraint](clientIdString).fold(JsError(_), id => JsSuccess(ClientId(id)))}
   private implicit val createdIdsFormat: Format[CreatedIds] = Json.valueFormat[CreatedIds]
-
-  private def mapWrites[K, V](keyWriter: K => String, valueWriter: Writes[V]): Writes[Map[K, V]] =
-    (ids: Map[K, V]) => {
-      ids.foldLeft(JsObject.empty)((jsObject, kv) => {
-        val (key: K, value: V) = kv
-        jsObject.+(keyWriter.apply(key), valueWriter.writes(value))
-      })
-    }
-
-  private implicit def createdIdsIdWrites(implicit serverIdWriter: Writes[ServerId]): Writes[Map[ClientId, ServerId]] =
-    mapWrites[ClientId, ServerId](_.value.value, serverIdWriter)
-
-  private implicit def createdIdsIdRead(implicit serverIdReader: Reads[ServerId]): Reads[Map[ClientId, ServerId]] =
-    Reads.mapReads[ClientId, ServerId] {
-      clientIdString => Json.fromJson[ClientId](JsString(clientIdString))
-    }
 
   // Invocation
   private implicit val methodNameFormat: Format[MethodName] = Json.valueFormat[MethodName]
   private implicit val argumentFormat: Format[Arguments] = Json.valueFormat[Arguments]
   private implicit val methodCallIdFormat: Format[MethodCallId] = Json.valueFormat[MethodCallId]
   private implicit val invocationRead: Reads[Invocation] = (
-    (JsPath \ model.Invocation.METHOD_NAME).read[MethodName] and
-      (JsPath \ model.Invocation.ARGUMENTS).read[Arguments] and
-      (JsPath \ model.Invocation.METHOD_CALL).read[MethodCallId]
-    ) (model.Invocation.apply _)
+    (JsPath \ core.Invocation.METHOD_NAME).read[MethodName] and
+      (JsPath \ core.Invocation.ARGUMENTS).read[Arguments] and
+      (JsPath \ core.Invocation.METHOD_CALL).read[MethodCallId]
+    ) (core.Invocation.apply _)
 
   private implicit val invocationWrite: Writes[Invocation] = (invocation: Invocation) =>
     Json.arr(invocation.methodName, invocation.arguments, invocation.methodCallId)
+  private implicit val statusWrite: Writes[HttpResponseStatus] = status => JsNumber(status.code())
 
   // RequestObject
   private implicit val requestObjectRead: Format[RequestObject] = Json.format[RequestObject]
 
+  private implicit val stateWrites: Writes[State] = Json.valueWrites[State]
   // ResponseObject
-  private implicit val responseObjectFormat: Format[ResponseObject] = Json.format[ResponseObject]
+  private implicit val responseObjectFormat: OFormat[ResponseObject] = Json.format[ResponseObject]
 
   private implicit val maxSizeUploadWrites: Writes[MaxSizeUpload] = Json.valueWrites[MaxSizeUpload]
   private implicit val maxConcurrentUploadWrites: Writes[MaxConcurrentUpload] = Json.valueWrites[MaxConcurrentUpload]
@@ -91,39 +88,25 @@ object ResponseSerializer {
 
   private implicit val usernameWrites: Writes[Username] = username => JsString(username.asString)
   private implicit val urlWrites: Writes[URL] = url => JsString(url.toString)
-  private implicit val coreCapabilityWrites: Writes[CoreCapabilityProperties] = Json.writes[CoreCapabilityProperties]
-  private implicit val mailCapabilityWrites: Writes[MailCapabilityProperties] = Json.writes[MailCapabilityProperties]
-  private implicit val quotaCapabilityWrites: Writes[QuotaCapabilityProperties] = OWrites[QuotaCapabilityProperties](_ => Json.obj())
-  private implicit val sharesCapabilityWrites: Writes[SharesCapabilityProperties] = OWrites[SharesCapabilityProperties](_ => Json.obj())
-  private implicit val vacationResponseCapabilityWrites: Writes[VacationResponseCapabilityProperties] = OWrites[VacationResponseCapabilityProperties](_ => Json.obj())
+  val coreCapabilityWrites: OWrites[CoreCapabilityProperties] = Json.writes[CoreCapabilityProperties]
+  val mailCapabilityWrites: OWrites[MailCapabilityProperties] = Json.writes[MailCapabilityProperties]
+  private implicit val maxDelayedSendWrites: Writes[MaxDelayedSend] = Json.valueWrites[MaxDelayedSend]
+  private implicit val ehloNameWrites: Writes[EhloName] = Json.valueWrites[EhloName]
+  private implicit val ehloArgsWrites: Writes[EhloArgs] = Json.valueWrites[EhloArgs]
+  private implicit val supportsPushWrites: Writes[SupportsPush] = Json.valueWrites[SupportsPush]
+  val submissionPropertiesWrites: OWrites[SubmissionProperties] = Json.writes[SubmissionProperties]
+  val webSocketPropertiesWrites: OWrites[WebSocketCapabilityProperties] = Json.writes[WebSocketCapabilityProperties]
 
-  private implicit def setCapabilityWrites(implicit corePropertiesWriter: Writes[CoreCapabilityProperties],
-                                   mailCapabilityWrites: Writes[MailCapabilityProperties],
-                                   quotaCapabilityWrites: Writes[QuotaCapabilityProperties],
-                                   sharesCapabilityWrites: Writes[SharesCapabilityProperties],
-                                   vacationResponseCapabilityWrites: Writes[VacationResponseCapabilityProperties]): Writes[Set[_ <: Capability]] =
+  private implicit val setCapabilityWrites: Writes[Set[_ <: Capability]] =
     (set: Set[_ <: Capability]) => {
-      set.foldLeft(JsObject.empty)((jsObject, capability) => {
-        capability match {
-          case capability: CoreCapability =>
-            jsObject.+(capability.identifier.value, corePropertiesWriter.writes(capability.properties))
-          case capability: MailCapability =>
-            jsObject.+(capability.identifier.value, mailCapabilityWrites.writes(capability.properties))
-          case capability: QuotaCapability =>
-            jsObject.+(capability.identifier.value, quotaCapabilityWrites.writes(capability.properties))
-          case capability: SharesCapability =>
-            jsObject.+(capability.identifier.value, sharesCapabilityWrites.writes(capability.properties))
-          case capability: VacationResponseCapability =>
-            jsObject.+(capability.identifier.value, vacationResponseCapabilityWrites.writes(capability.properties))
-          case _ => jsObject
-        }
-      })
+      set.foldLeft(JsObject.empty)((jsObject, capability) =>
+        jsObject.+(capability.identifier.value, capability.properties.jsonify))
     }
 
-  private implicit val capabilitiesWrites: Writes[Capabilities] = capabilities => setCapabilityWrites.writes(capabilities.toSet)
+  private implicit val capabilitiesWrites: Writes[Capabilities] = capabilities => setCapabilityWrites.writes(capabilities.capabilities)
 
-  private implicit def identifierMapWrite[Any](implicit idWriter: Writes[AccountId]): Writes[Map[CapabilityIdentifier, AccountId]] =
-    mapWrites[CapabilityIdentifier, AccountId](_.value, idWriter)
+  private implicit val identifierMapWrite: Writes[Map[CapabilityIdentifier, AccountId]] =
+    mapWrites[CapabilityIdentifier, AccountId](_.value, accountIdWrites)
 
   private implicit val isPersonalFormat: Format[IsPersonal] = Json.valueFormat[IsPersonal]
   private implicit val isReadOnlyFormat: Format[IsReadOnly] = Json.valueFormat[IsReadOnly]
@@ -134,7 +117,7 @@ object ResponseSerializer {
       (JsPath \ Account.ACCOUNT_CAPABILITIES).write[Set[_ <: Capability]]
     ) (unlift(Account.unapplyIgnoreAccountId))
 
-  private implicit def accountListWrites(implicit accountWrites: Writes[Account]): Writes[List[Account]] =
+  private implicit val accountListWrites: Writes[List[Account]] =
     (list: List[Account]) => JsObject(list.map(account => (account.accountId.id.value, accountWrites.writes(account))))
 
   private implicit val sessionWrites: Writes[Session] = Json.writes[Session]
@@ -148,12 +131,12 @@ object ResponseSerializer {
 
   private implicit val jsonValidationErrorWrites: Writes[JsonValidationError] = error => JsString(error.message)
 
-  private implicit def jsonValidationErrorsWrites(implicit jsonValidationErrorWrites: Writes[JsonValidationError]): Writes[LegacySeq[JsonValidationError]] =
+  private implicit val jsonValidationErrorsWrites: Writes[LegacySeq[JsonValidationError]] =
     (errors: LegacySeq[JsonValidationError]) => {
       JsArray(errors.map(error => jsonValidationErrorWrites.writes(error)).toArray[JsValue])
     }
 
-  private implicit def errorsWrites(implicit jsonValidationErrorsWrites: Writes[LegacySeq[JsonValidationError]]): Writes[LegacySeq[(JsPath, LegacySeq[JsonValidationError])]] =
+  private implicit val errorsWrites: Writes[LegacySeq[(JsPath, LegacySeq[JsonValidationError])]] =
     (errors: LegacySeq[(JsPath, LegacySeq[JsonValidationError])]) => {
       errors.foldLeft(JsArray.empty)((jsArray, jsError) => {
         val (path: JsPath, list: LegacySeq[JsonValidationError]) = jsError
@@ -163,9 +146,79 @@ object ResponseSerializer {
       })
     }
 
-  private implicit def jsErrorWrites: Writes[JsError] = Json.writes[JsError]
+  private implicit val jsErrorWrites: Writes[JsError] = Json.writes[JsError]
 
-  private implicit val problemDetailsWrites: Writes[ProblemDetails] = Json.writes[ProblemDetails]
+  private implicit val problemDetailsWrites: OWrites[ProblemDetails] = Json.writes[ProblemDetails]
+
+  private implicit val requestIdFormat: Format[RequestId] = Json.valueFormat[RequestId]
+  private implicit val webSocketRequestReads: Reads[WebSocketRequest] = {
+    case jsObject: JsObject =>
+      for {
+        requestId <- jsObject.value.get("requestId")
+          .map(requestIdJson => requestIdFormat.reads(requestIdJson).map(Some(_)))
+          .getOrElse(JsSuccess(None))
+        request <- requestObjectRead.reads(jsObject)
+      } yield {
+        WebSocketRequest(requestId, request)
+      }
+    case _ => JsError("Expecting a JsObject to represent a webSocket inbound request")
+  }
+  private implicit val typeNameReads: Reads[TypeName] = {
+    case JsString(string) => TypeName.parse(string)
+      .fold(errorMessage => JsError(errorMessage), JsSuccess(_))
+    case _ => JsError("Expecting a JsString as typeName")
+  }
+  private implicit val pushStateReads: Reads[PushState] = Json.valueReads[PushState]
+  private implicit val webSocketPushEnableReads: Reads[WebSocketPushEnable] = Json.reads[WebSocketPushEnable]
+  private implicit val webSocketInboundReads: Reads[WebSocketInboundMessage] = {
+    case json: JsObject =>
+      json.value.get("@type") match {
+        case Some(JsString("Request")) => webSocketRequestReads.reads(json)
+        case Some(JsString("WebSocketPushEnable")) => webSocketPushEnableReads.reads(json)
+        case Some(JsString("WebSocketPushDisable")) => JsSuccess(WebSocketPushDisable)
+        case Some(JsString(unknownType)) => JsError(s"Unknown @type field on a webSocket inbound message: $unknownType")
+        case Some(invalidType) => JsError(s"Invalid @type field on a webSocket inbound message: expecting a JsString, got $invalidType")
+        case None => JsError(s"Missing @type field on a webSocket inbound message")
+      }
+    case _ => JsError("Expecting a JsObject to represent a webSocket inbound message")
+  }
+
+  private implicit val typeStateMapWrites: Writes[Map[TypeName, State]] = mapWrites[TypeName, State](_.asString(), stateWrites)
+  private implicit val typeStateWrites: Writes[TypeState] = Json.valueWrites[TypeState]
+  private implicit val changeWrites: OWrites[Map[AccountId, TypeState]] = mapWrites[AccountId, TypeState](_.id.value, typeStateWrites)
+  private implicit val pushStateWrites: Writes[PushState] = Json.valueWrites[PushState]
+  private implicit val stateChangeWrites: Writes[StateChange] = stateChange =>
+    stateChange.pushState.map(pushState =>
+      JsObject(Map(
+        "@type" -> JsString("StateChange"),
+        "changed" -> changeWrites.writes(stateChange.changes),
+        "pushState" -> pushStateWrites.writes(pushState))))
+      .getOrElse(
+        JsObject(Map(
+          "@type" -> JsString("StateChange"),
+          "changed" -> changeWrites.writes(stateChange.changes))))
+
+  private implicit val webSocketResponseWrites: Writes[WebSocketResponse] = response => {
+    val apiResponseJson: JsObject = responseObjectFormat.writes(response.responseObject)
+    JsObject(Map(
+      "@type" -> JsString("Response"),
+      "requestId" -> response.requestId.map(_.value).map(JsString).getOrElse(JsNull))
+      ++ apiResponseJson.value)
+  }
+  private implicit val webSocketErrorWrites: Writes[WebSocketError] = error => {
+    val errorJson: JsObject = problemDetailsWrites.writes(error.problemDetails)
+    JsObject(Map(
+      "@type" -> JsString("RequestError"),
+      "requestId" -> error.requestId.map(_.value).map(JsString).getOrElse(JsNull))
+      ++ errorJson.value)
+  }
+  private implicit val pingWrites: Writes[PingMessage] = Json.writes[PingMessage]
+  private implicit val webSocketOutboundWrites: Writes[OutboundMessage] = {
+    case pingMessage: PingMessage => pingWrites.writes(pingMessage)
+    case stateChange: StateChange => stateChangeWrites.writes(stateChange)
+    case response: WebSocketResponse => webSocketResponseWrites.writes(response)
+    case error: WebSocketError => webSocketErrorWrites.writes(error)
+  }
 
   def serialize(session: Session): JsValue = Json.toJson(session)
 
@@ -177,7 +230,12 @@ object ResponseSerializer {
 
   def serialize(errors: JsError): JsValue = Json.toJson(errors)
 
+  def serialize(outboundMessage: OutboundMessage): JsValue = Json.toJson(outboundMessage)
+
   def deserializeRequestObject(input: String): JsResult[RequestObject] = Json.parse(input).validate[RequestObject]
+
+  def deserializeWebSocketInboundMessage(input: String): JsResult[WebSocketInboundMessage] = Try(Json.parse(input).validate[WebSocketInboundMessage])
+    .fold(e => JsError(e.getMessage), result => result)
 
   def deserializeRequestObject(input: InputStream): JsResult[RequestObject] = Json.parse(input).validate[RequestObject]
 

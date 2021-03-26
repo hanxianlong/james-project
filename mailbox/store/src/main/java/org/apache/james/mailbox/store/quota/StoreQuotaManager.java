@@ -28,6 +28,7 @@ import org.apache.james.core.quota.QuotaCountUsage;
 import org.apache.james.core.quota.QuotaSizeLimit;
 import org.apache.james.core.quota.QuotaSizeUsage;
 import org.apache.james.mailbox.exception.MailboxException;
+import org.apache.james.mailbox.model.CurrentQuotas;
 import org.apache.james.mailbox.model.Quota;
 import org.apache.james.mailbox.model.Quota.Scope;
 import org.apache.james.mailbox.model.QuotaRoot;
@@ -73,4 +74,20 @@ public class StoreQuotaManager implements QuotaManager {
             .build();
     }
 
+    @Override
+    public Quotas getQuotas(QuotaRoot quotaRoot) throws MailboxException {
+        MaxQuotaManager.QuotaDetails quotaDetails = maxQuotaManager.quotaDetails(quotaRoot);
+        CurrentQuotas currentQuotas = Mono.from(currentQuotaManager.getCurrentQuotas(quotaRoot)).block();
+        return new Quotas(
+            Quota.<QuotaCountLimit, QuotaCountUsage>builder()
+                .used(currentQuotas.count())
+                .computedLimit(maxQuotaManager.getMaxMessage(quotaDetails.getMaxMessageDetails()).orElse(QuotaCountLimit.unlimited()))
+                .limitsByScope(quotaDetails.getMaxMessageDetails())
+                .build(),
+            Quota.<QuotaSizeLimit, QuotaSizeUsage>builder()
+                .used(currentQuotas.size())
+                .computedLimit(maxQuotaManager.getMaxStorage(quotaDetails.getMaxStorageDetails()).orElse(QuotaSizeLimit.unlimited()))
+                .limitsByScope(quotaDetails.getMaxStorageDetails())
+                .build());
+    }
 }

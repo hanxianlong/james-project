@@ -21,16 +21,17 @@ package org.apache.james.jmap.method
 
 import eu.timepit.refined.auto._
 import javax.inject.Inject
-import org.apache.james.jmap.http.SessionSupplier
+import org.apache.james.jmap.api.change.MailboxChangeRepository
+import org.apache.james.jmap.api.model.{AccountId => JavaAccountId}
+import org.apache.james.jmap.core.CapabilityIdentifier.{CapabilityIdentifier, JAMES_SHARES, JMAP_CORE, JMAP_MAIL}
+import org.apache.james.jmap.core.Invocation.{Arguments, MethodName}
+import org.apache.james.jmap.core.{AccountId, CapabilityIdentifier, ErrorCode, Invocation, Properties, State}
+import org.apache.james.jmap.http.MailboxesProvisioner
 import org.apache.james.jmap.json.{MailboxSerializer, ResponseSerializer}
 import org.apache.james.jmap.mail.MailboxGet.UnparsedMailboxId
-import org.apache.james.jmap.mail._
-import org.apache.james.jmap.model.CapabilityIdentifier.CapabilityIdentifier
-import org.apache.james.jmap.model.DefaultCapabilities.{CORE_CAPABILITY, MAIL_CAPABILITY}
-import org.apache.james.jmap.model.Invocation.{Arguments, MethodName}
-import org.apache.james.jmap.model.State.INSTANCE
-import org.apache.james.jmap.model.{AccountId, Capabilities, CapabilityIdentifier, ErrorCode, Invocation, MailboxFactory, Properties, Subscriptions}
-import org.apache.james.jmap.utils.quotas.{QuotaLoader, QuotaLoaderWithPreloadedDefaultFactory}
+import org.apache.james.jmap.mail.{Mailbox, MailboxFactory, MailboxGet, MailboxGetRequest, MailboxGetResponse, NotFound, PersonalNamespace, Subscriptions}
+import org.apache.james.jmap.routes.SessionSupplier
+import org.apache.james.jmap.utils.quotas.{QuotaLoaderWithPreloadedDefault, QuotaLoaderWithPreloadedDefaultFactory}
 import org.apache.james.mailbox.exception.MailboxNotFoundException
 import org.apache.james.mailbox.model.search.MailboxQuery
 import org.apache.james.mailbox.model.{MailboxId, MailboxMetaData}
@@ -43,41 +44,44 @@ import reactor.core.scheduler.Schedulers
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
+object MailboxGetResults {
+  def merge(result1: MailboxGetResults, result2: MailboxGetResults): MailboxGetResults = result1.merge(result2)
+  def empty(): MailboxGetResults = MailboxGetResults(Set.empty, NotFound(Set.empty))
+  def found(mailbox: Mailbox): MailboxGetResults = MailboxGetResults(Set(mailbox), NotFound(Set.empty))
+  def notFound(mailboxId: UnparsedMailboxId): MailboxGetResults = MailboxGetResults(Set.empty, NotFound(Set(mailboxId)))
+  def notFound(mailboxId: MailboxId): MailboxGetResults = MailboxGetResults(Set.empty, NotFound(Set(MailboxGet.asUnparsed(mailboxId))))
+}
+
+case class MailboxGetResults(mailboxes: Set[Mailbox], notFound: NotFound) {
+  def merge(other: MailboxGetResults): MailboxGetResults = MailboxGetResults(this.mailboxes ++ other.mailboxes, this.notFound.merge(other.notFound))
+
+  def asResponse(accountId: AccountId, state: State): MailboxGetResponse = MailboxGetResponse(
+    accountId = accountId,
+    state = state,
+    list = mailboxes.toList.sortBy(_.sortOrder),
+    notFound = notFound)
+}
+
 class MailboxGetMethod @Inject() (serializer: MailboxSerializer,
                                   mailboxManager: MailboxManager,
                                   subscriptionManager: SubscriptionManager,
                                   quotaFactory : QuotaLoaderWithPreloadedDefaultFactory,
                                   mailboxIdFactory: MailboxId.Factory,
                                   mailboxFactory: MailboxFactory,
+                                  provisioner: MailboxesProvisioner,
+                                  mailboxChangeRepository: MailboxChangeRepository,
                                   val metricFactory: MetricFactory,
                                   val sessionSupplier: SessionSupplier) extends MethodRequiringAccountId[MailboxGetRequest] {
   override val methodName: MethodName = MethodName("Mailbox/get")
-  override val requiredCapabilities: Capabilities = Capabilities(CORE_CAPABILITY, MAIL_CAPABILITY)
-
-  object MailboxGetResults {
-    def merge(result1: MailboxGetResults, result2: MailboxGetResults): MailboxGetResults = result1.merge(result2)
-    def empty(): MailboxGetResults = MailboxGetResults(Set.empty, NotFound(Set.empty))
-    def found(mailbox: Mailbox): MailboxGetResults = MailboxGetResults(Set(mailbox), NotFound(Set.empty))
-    def notFound(mailboxId: UnparsedMailboxId): MailboxGetResults = MailboxGetResults(Set.empty, NotFound(Set(mailboxId)))
-    def notFound(mailboxId: MailboxId): MailboxGetResults = MailboxGetResults(Set.empty, NotFound(Set(MailboxGet.asUnparsed(mailboxId))))
-  }
-
-  case class MailboxGetResults(mailboxes: Set[Mailbox], notFound: NotFound) {
-    def merge(other: MailboxGetResults): MailboxGetResults = MailboxGetResults(this.mailboxes ++ other.mailboxes, this.notFound.merge(other.notFound))
-
-    def asResponse(accountId: AccountId): MailboxGetResponse = MailboxGetResponse(
-      accountId = accountId,
-      state = INSTANCE,
-      list = mailboxes.toList.sortBy(_.sortOrder),
-      notFound = notFound)
-  }
+  override val requiredCapabilities: Set[CapabilityIdentifier] = Set(JMAP_CORE, JMAP_MAIL)
 
   override def doProcess(capabilities: Set[CapabilityIdentifier], invocation: InvocationWithContext, mailboxSession: MailboxSession, request: MailboxGetRequest): SMono[InvocationWithContext] = {
     val requestedProperties: Properties = request.properties.getOrElse(Mailbox.allProperties)
     (requestedProperties -- Mailbox.allProperties match {
       case invalidProperties if invalidProperties.isEmpty() => getMailboxes(capabilities, request, mailboxSession)
-        .reduce(MailboxGetResults.empty(), MailboxGetResults.merge)
-        .map(mailboxes => mailboxes.asResponse(request.accountId))
+        .reduce(MailboxGetResults.empty())(MailboxGetResults.merge)
+        .flatMap(mailboxes => retrieveState(capabilities, mailboxSession)
+          .map(state => mailboxes.asResponse(request.accountId, state)))
         .map(mailboxGetResponse => Invocation(
           methodName = methodName,
           arguments = Arguments(serializer.serialize(mailboxGetResponse, requestedProperties, capabilities).as[JsObject]),
@@ -90,27 +94,35 @@ class MailboxGetMethod @Inject() (serializer: MailboxSerializer,
 
   }
 
-  override def getRequest(mailboxSession: MailboxSession, invocation: Invocation): SMono[MailboxGetRequest] = asMailboxGetRequest(invocation.arguments)
-
-  private def asMailboxGetRequest(arguments: Arguments): SMono[MailboxGetRequest] = {
-    serializer.deserializeMailboxGetRequest(arguments.value) match {
-      case JsSuccess(mailboxGetRequest, _) => SMono.just(mailboxGetRequest)
-      case errors: JsError => SMono.raiseError(new IllegalArgumentException(ResponseSerializer.serialize(errors).toString))
+  private def retrieveState(capabilities: Set[CapabilityIdentifier], mailboxSession: MailboxSession): SMono[State] =
+    if (capabilities.contains(JAMES_SHARES)) {
+      SMono(mailboxChangeRepository.getLatestStateWithDelegation(JavaAccountId.fromUsername(mailboxSession.getUser)))
+        .map(State.fromJava)
+    } else {
+      SMono(mailboxChangeRepository.getLatestState(JavaAccountId.fromUsername(mailboxSession.getUser)))
+        .map(State.fromJava)
     }
+
+  override def getRequest(mailboxSession: MailboxSession, invocation: Invocation): Either[IllegalArgumentException, MailboxGetRequest] =
+    serializer.deserializeMailboxGetRequest(invocation.arguments.value) match {
+    case JsSuccess(mailboxGetRequest, _) => Right(mailboxGetRequest)
+    case errors: JsError => Left(new IllegalArgumentException(ResponseSerializer.serialize(errors).toString))
   }
 
   private def getMailboxes(capabilities: Set[CapabilityIdentifier],
                            mailboxGetRequest: MailboxGetRequest,
                            mailboxSession: MailboxSession): SFlux[MailboxGetResults] =
-
-    mailboxGetRequest.ids match {
-      case None => getAllMailboxes(capabilities, mailboxSession)
-        .map(MailboxGetResults.found)
-      case Some(ids) => SFlux.fromIterable(ids.value)
-        .flatMap(id => Try(mailboxIdFactory.fromString(id.value))
-          .fold(e => SMono.just(MailboxGetResults.notFound(id)),
-            mailboxId => getMailboxResultById(capabilities, mailboxId, mailboxSession)))
-    }
+    provisioner.createMailboxesIfNeeded(mailboxSession)
+      .thenMany(
+        mailboxGetRequest.ids match {
+          case None => getAllMailboxes(capabilities, mailboxSession)
+            .map(MailboxGetResults.found)
+          case Some(ids) => SFlux.fromIterable(ids.value)
+            .flatMap(id => Try(mailboxIdFactory.fromString(id.value))
+              .fold(e => SMono.just(MailboxGetResults.notFound(id)),
+                mailboxId => getMailboxResultById(capabilities, mailboxId, mailboxSession)),
+              maxConcurrency = 5)
+        })
 
   private def getMailboxResultById(capabilities: Set[CapabilityIdentifier],
                                    mailboxId: MailboxId,
@@ -139,23 +151,20 @@ class MailboxGetMethod @Inject() (serializer: MailboxSerializer,
     val subscriptions: SMono[Subscriptions] = SMono.fromCallable(() =>
       Subscriptions(subscriptionManager.subscriptions(mailboxSession).asScala.toSet))
 
-    quotaFactory.loadFor(mailboxSession)
-      .flatMap(quotaLoader => subscriptions.map[(QuotaLoader, Subscriptions)](subscriptions => (quotaLoader, subscriptions)))
+    SMono.zip(array => (array(0).asInstanceOf[Seq[MailboxMetaData]],
+          array(1).asInstanceOf[QuotaLoaderWithPreloadedDefault],
+          array(2).asInstanceOf[Subscriptions]),
+        getAllMailboxesMetaData(capabilities, mailboxSession),
+        quotaFactory.loadFor(mailboxSession),
+        subscriptions)
       .subscribeOn(Schedulers.elastic)
-      .flatMap {
-        case (quotaLoader, subscriptions) => getAllMailboxesMetaData(capabilities, mailboxSession)
-          .map((_, quotaLoader, subscriptions))
-      }
       .flatMapMany {
         case (mailboxes, quotaLoader, subscriptions) => SFlux.fromIterable(mailboxes)
-          .map(mailbox => (mailboxes, mailbox, quotaLoader, subscriptions))
-      }
-      .flatMap {
-        case (mailboxes, mailbox, quotaLoader, subs) => mailboxFactory.create(mailboxMetaData = mailbox,
-          mailboxSession = mailboxSession,
-          subscriptions = subs,
-          allMailboxesMetadata = mailboxes,
-          quotaLoader = quotaLoader)
+          .flatMap(mailbox => mailboxFactory.create(mailboxMetaData = mailbox,
+            mailboxSession = mailboxSession,
+            subscriptions = subscriptions,
+            allMailboxesMetadata = mailboxes,
+            quotaLoader = quotaLoader))
       }
   }
 

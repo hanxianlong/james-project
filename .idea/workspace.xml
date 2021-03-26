@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="affde88d-e6ba-4455-8293-077172230d55" name="Default Changelist" comment="" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/quota-search/target/" />
+    <ignored path="$PROJECT_DIR$/server/queue/queue-rabbitmq/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/pop3/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/testing/custom-mailets/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/cyrus/target/" />
+    <ignored path="$PROJECT_DIR$/server/dns-service/dnsservice-library/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-draft/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/guice-common/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/lmtp/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/managesieve/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/smtp/core/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/blob-s3-guice/target/" />
+    <ignored path="$PROJECT_DIR$/third-party/linshare/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/blob-memory-guice/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/external-james/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/mailetdocs-maven-plugin/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/all/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/sieve-jpa/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/cli-integration/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/metrics/metrics-es-reporter/target/" />
+    <ignored path="$PROJECT_DIR$/server/dns-service/dnsservice-test/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-jmap/target/" />
+    <ignored path="$PROJECT_DIR$/server/dns-service/dnsservice-dnsjava/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-rfc-8621-integration-tests/memory-jmap-rfc-8621-integration-tests/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/tika/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/lifecycle-api/target/" />
+    <ignored path="$PROJECT_DIR$/event-sourcing/event-sourcing-core/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailrepository/mailrepository-memory/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-rabbitmq/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/memory/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/tools/quota-recompute/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/guice-utils/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/jpa-common-guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-export-file/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/rabbitmq/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/blob-export-guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailrepository/mailrepository-api/target/" />
+    <ignored path="$PROJECT_DIR$/backends-common/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/filesystem-api/target/" />
+    <ignored path="$PROJECT_DIR$/third-party/spamassassin/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/mailbox/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/tools/jpa-migrator/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/jpa/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-rfc-8621-integration-tests/jmap-rfc-8621-integration-tests-common/target/" />
+    <ignored path="$PROJECT_DIR$/javax-mail-extension/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/tools/copier/target/" />
+    <ignored path="$PROJECT_DIR$/server/dns-service/dnsservice-api/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-rfc-8621-integration-tests/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/smtp/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/mail-store/target/" />
+    <ignored path="$PROJECT_DIR$/event-sourcing/event-store-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/metrics/metrics-dropwizard/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/netty/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/test/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin-cli/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailet/dkim/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/managedsieve/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-core/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/deleted-messages-vault/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-jmap/target/" />
+    <ignored path="$PROJECT_DIR$/server/queue/queue-jms/target/" />
+    <ignored path="$PROJECT_DIR$/event-sourcing/event-sourcing-pojo/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/spamassassin/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/elasticsearch/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/cassandra-ldap-guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailet/mailetcontainer-api/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/jpa/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/target/" />
+    <ignored path="$PROJECT_DIR$/server/task/task-json/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/standard/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/imap/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/protocols-pop3/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/configuration/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/event/event-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/backends-common/rabbitmq/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/jpa-smtp/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-draft-integration-testing/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-library/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/util/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/quota-search-elasticsearch/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/jmx/target/" />
+    <ignored path="$PROJECT_DIR$/event-sourcing/event-store-memory/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/fetchmail/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/quota-mailing-memory/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-gc/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/blob-api-guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/testing/custom-mailets-implementation/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/pop/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-data/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/jpa-smtp-common/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/quota-search-scanning/target/" />
+    <ignored path="$PROJECT_DIR$/backends-common/cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/managesieve/cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/examples/custom-listeners/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-cassandra-data/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/mailbox-adapter/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/smtp/cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-draft-integration-testing/rabbitmq-jmap-draft-integration-testing/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-rfc-8621/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/protocols-lmtp/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin-integration-test/webadmin-integration-test-common/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/imap/target/" />
+    <ignored path="$PROJECT_DIR$/server/queue/queue-activemq/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/managesieve/core/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-rfc-8621-integration-tests/distributed-jmap-rfc-8621-integration-tests/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/sieve-file/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/es-metric-reporter/target/" />
+    <ignored path="$PROJECT_DIR$/server/queue/queue-file/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/backup/target/" />
+    <ignored path="$PROJECT_DIR$/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailet/mock-smtp-server/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/cassandra-rabbitmq-ldap-guice/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/mavenplugin/target/" />
+    <ignored path="$PROJECT_DIR$/third-party/target/" />
+    <ignored path="$PROJECT_DIR$/server/task/task-memory/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/spring/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/lucene/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/memory-guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailet/integration-testing/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/protocols-library/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-jdbc/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-api/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin-rabbitmq-mailqueue/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/target/" />
+    <ignored path="$PROJECT_DIR$/mdn/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/cassandra-rabbitmq-guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin-data/target/" />
+    <ignored path="$PROJECT_DIR$/examples/target/" />
+    <ignored path="$PROJECT_DIR$/backends-common/elasticsearch/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/event/json/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/protocols-smtp/target/" />
+    <ignored path="$PROJECT_DIR$/server/app/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/api/target/" />
+    <ignored path="$PROJECT_DIR$/server/testing/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin-jmap/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/smtp/cassandra-rabbitmq-object-storage/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-mailqueue/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin-integration-test/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-jmap-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/protocols-imap4/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/netty/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/quota-mailing-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/activemq/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/app/target/" />
+    <ignored path="$PROJECT_DIR$/testing/base/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/smtp/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/inmemory/target/" />
+    <ignored path="$PROJECT_DIR$/metrics/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-api/target/" />
+    <ignored path="$PROJECT_DIR$/backends-common/jpa/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/jpa-smtp-mariadb/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/jmap/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/event/event-rabbitmq/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/mailbox-jmx/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/mailbox-plugin-deleted-messages-vault-guice/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/base/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/mailbox-plugin-spamassassin/target/" />
+    <ignored path="$PROJECT_DIR$/examples/custom-mailets/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin-mailbox/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/testing/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/spring/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/scanning-search/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailet/mailetcontainer-camel/target/" />
+    <ignored path="$PROJECT_DIR$/server/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/api/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-draft-integration-testing/cassandra-jmap-draft-integration-testing/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailrepository/mailrepository-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/lucenesearch/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/icalendar/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-swagger/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/core/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/api/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/testing/dependency/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin-mailqueue/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-draft-integration-testing/jmap-draft-integration-testing-common/target/" />
+    <ignored path="$PROJECT_DIR$/protocols/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/managesieve/file/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-export-api/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/lmtp/target/" />
+    <ignored path="$PROJECT_DIR$/json/target/" />
+    <ignored path="$PROJECT_DIR$/metrics/metrics-api/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/mailet/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-storage-strategy/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin-swagger/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/smtp/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-file/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-ldap/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-mailbox/target/" />
+    <ignored path="$PROJECT_DIR$/metrics/metrics-logger/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/core/target/" />
+    <ignored path="$PROJECT_DIR$/server/queue/queue-api/target/" />
+    <ignored path="$PROJECT_DIR$/metrics/metrics-tests/target/" />
+    <ignored path="$PROJECT_DIR$/server/task/task-api/target/" />
+    <ignored path="$PROJECT_DIR$/core/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/maildir/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jmap-draft-integration-testing/memory-jmap-draft-integration-testing/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-common/target/" />
+    <ignored path="$PROJECT_DIR$/event-sourcing/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-memory/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-memory/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/store/target/" />
+    <ignored path="$PROJECT_DIR$/server/mailet/mailets/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/onami/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/managesieve/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/tools/indexer/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/crypto/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/cli/target/" />
+    <ignored path="$PROJECT_DIR$/server/blob/blob-s3/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin-integration-test/memory-webadmin-integration-test/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/core/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/jpa-guice/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/cassandra-guice/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/quota-mailing/target/" />
+    <ignored path="$PROJECT_DIR$/mailet/ai/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-dropwizard-metrics/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/rabbitmq/target/" />
+    <ignored path="$PROJECT_DIR$/server/task/task-distributed/target/" />
+    <ignored path="$PROJECT_DIR$/mpt/impl/imap-mailbox/elasticsearch/target/" />
+    <ignored path="$PROJECT_DIR$/server/queue/queue-memory/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/protocols-managesieve/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-mailbox-deleted-message-vault/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin/webadmin-mailrepository/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/event/event-memory/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/jwt/target/" />
+    <ignored path="$PROJECT_DIR$/server/data/data-jpa/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/maildir/target/" />
+    <ignored path="$PROJECT_DIR$/event-sourcing/event-store-api/target/" />
+    <ignored path="$PROJECT_DIR$/mailbox/plugin/deleted-messages-vault-cassandra/target/" />
+    <ignored path="$PROJECT_DIR$/server/container/guice/protocols/webadmin-mailrepository/target/" />
+    <ignored path="$PROJECT_DIR$/server/protocols/webadmin-integration-test/distributed-webadmin-integration-test/target/" />
+    <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="ProjectFrameBounds">
+    <option name="y" value="25" />
+    <option name="width" value="1440" />
+    <option name="height" value="875" />
+  </component>
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectView">
+    <navigator proportions="" version="1">
+      <foldersAlwaysOnTop value="true" />
+    </navigator>
+    <panes>
+      <pane id="ProjectPane">
+        <subPane>
+          <expand>
+            <path>
+              <item name="james-project" type="b2602c69:ProjectViewProjectNode" />
+              <item name="james-project" type="462c0819:PsiDirectoryNode" />
+            </path>
+          </expand>
+          <select />
+        </subPane>
+      </pane>
+      <pane id="PackagesPane" />
+      <pane id="Scope" />
+    </panes>
+  </component>
+  <component name="PropertiesComponent">
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="aspect.path.notification.shown" value="true" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="settings.editor.selected.configurable" value="preferences.externalDependencies" />
+    <property name="settings.editor.splitter.proportion" value="0.2" />
+  </component>
+  <component name="RunDashboard">
+    <option name="ruleStates">
+      <list>
+        <RuleState>
+          <option name="name" value="ConfigurationTypeDashboardGroupingRule" />
+        </RuleState>
+        <RuleState>
+          <option name="name" value="StatusDashboardGroupingRule" />
+        </RuleState>
+      </list>
+    </option>
+  </component>
+  <component name="RunManager">
+    <configuration default="true" type="Applet">
+      <option name="POLICY_FILE" value="$APPLICATION_HOME_DIR$/bin/appletviewer.policy" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="Application" factoryName="Application">
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="JUnit" factoryName="JUnit">
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="TestNG">
+      <option name="WORKING_DIRECTORY" value="$MODULE_DIR$" />
+      <properties />
+      <listeners />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="#org.jetbrains.idea.devkit.run.PluginConfigurationType">
+      <module name="" />
+      <option name="VM_PARAMETERS" value="-Xmx512m -Xms256m -XX:MaxPermSize=250m -ea" />
+      <option name="PROGRAM_PARAMETERS" />
+      <predefined_log_file enabled="true" id="idea.log" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="affde88d-e6ba-4455-8293-077172230d55" name="Default Changelist" comment="" />
+      <created>1616733509632</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1616733509632</updated>
+      <workItem from="1616733511158" duration="144000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TimeTrackingManager">
+    <option name="totallyTimeSpent" value="144000" />
+  </component>
+  <component name="ToolWindowManager">
+    <frame x="0" y="25" width="1440" height="875" extended-state="0" />
+    <editor active="true" />
+    <layout>
+      <window_info id="Image Layers" />
+      <window_info id="Designer" />
+      <window_info id="UI Designer" />
+      <window_info id="Capture Tool" />
+      <window_info id="Favorites" side_tool="true" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.24964234" />
+      <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
+      <window_info anchor="bottom" id="Docker" show_stripe_button="false" />
+      <window_info anchor="bottom" id="Database Changes" />
+      <window_info anchor="bottom" id="Version Control" />
+      <window_info anchor="bottom" id="Terminal" weight="0.36936936" />
+      <window_info anchor="bottom" id="Event Log" side_tool="true" />
+      <window_info anchor="bottom" id="Message" order="0" />
+      <window_info anchor="bottom" id="Find" order="1" />
+      <window_info anchor="bottom" id="Run" order="2" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.4" />
+      <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
+      <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
+      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="right" id="Palette" />
+      <window_info anchor="right" id="Theme Preview" />
+      <window_info anchor="right" id="Maven" />
+      <window_info anchor="right" id="Capture Analysis" />
+      <window_info anchor="right" id="Palette&#9;" />
+      <window_info anchor="right" id="Database" />
+      <window_info anchor="right" id="Commander" order="0" weight="0.4" />
+      <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
+      <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
+    </layout>
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="1" />
+  </component>
+  <component name="masterDetails">
+    <states>
+      <state key="ProjectJDKs.UI">
+        <settings>
+          <last-edited>11</last-edited>
+          <splitter-proportions>
+            <option name="proportions">
+              <list>
+                <option value="0.19947849" />
+              </list>
+            </option>
+          </splitter-proportions>
+        </settings>
+      </state>
+    </states>
+  </component>
+</project>

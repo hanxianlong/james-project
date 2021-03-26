@@ -22,10 +22,10 @@ package org.apache.james.jmap.mail
 import eu.timepit.refined
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.collection.NonEmpty
+import org.apache.james.jmap.api.change.{EmailChanges, Limit, MailboxChanges}
+import org.apache.james.jmap.core.{AccountId, Properties, State}
 import org.apache.james.jmap.mail.MailboxGet.UnparsedMailboxId
 import org.apache.james.jmap.method.WithAccountId
-import org.apache.james.jmap.model.State.State
-import org.apache.james.jmap.model.{AccountId, Properties}
 import org.apache.james.mailbox.model.MailboxId
 
 import scala.util.{Failure, Try}
@@ -64,3 +64,24 @@ case class MailboxGetResponse(accountId: AccountId,
                               state: State,
                               list: List[Mailbox],
                               notFound: NotFound)
+
+object HasMoreChanges {
+  def fromMailboxChanges(mailboxChanges: MailboxChanges): HasMoreChanges = HasMoreChanges(mailboxChanges.hasMoreChanges)
+
+  def fromEmailChanges(emailChanges: EmailChanges): HasMoreChanges = HasMoreChanges(emailChanges.hasMoreChanges)
+}
+
+case class HasMoreChanges(value: Boolean) extends AnyVal
+
+case class MailboxChangesRequest(accountId: AccountId,
+                                 sinceState: State,
+                                 maxChanged: Option[Limit]) extends WithAccountId
+
+case class MailboxChangesResponse(accountId: AccountId,
+                                  oldState: State,
+                                  newState: State,
+                                  hasMoreChanges: HasMoreChanges,
+                                  updatedProperties: Option[Properties],
+                                  created: Set[MailboxId],
+                                  updated: Set[MailboxId],
+                                  destroyed: Set[MailboxId])

@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets
 import io.netty.handler.codec.http.HttpHeaderNames.ACCEPT
 import io.restassured.RestAssured.{`given`, requestSpecification}
 import org.apache.commons.io.IOUtils
-import org.apache.http.HttpStatus.{SC_NOT_FOUND, SC_OK, SC_UNAUTHORIZED}
+import org.apache.http.HttpStatus.{SC_FORBIDDEN, SC_NOT_FOUND, SC_OK, SC_UNAUTHORIZED}
 import org.apache.james.GuiceJamesServer
 import org.apache.james.jmap.http.UserCredential
 import org.apache.james.jmap.rfc8621.contract.DownloadContract.accountId
@@ -34,9 +34,10 @@ import org.apache.james.mailbox.MessageManager.AppendCommand
 import org.apache.james.mailbox.model.MailboxACL.Right
 import org.apache.james.mailbox.model.{MailboxACL, MailboxPath, MessageId}
 import org.apache.james.modules.{ACLProbeImpl, MailboxProbeImpl}
+import org.apache.james.util.ClassLoaderUtils
 import org.apache.james.utils.DataProbeImpl
 import org.assertj.core.api.Assertions.assertThat
-import org.hamcrest.Matchers.{containsString, emptyOrNullString}
+import org.hamcrest.Matchers.{containsString, equalTo}
 import org.junit.jupiter.api.{BeforeEach, Test}
 
 object DownloadContract {
@@ -64,7 +65,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
 
@@ -80,7 +81,7 @@ trait DownloadContract {
       .body
       .asString
 
-    val expectedResponse: String = IOUtils.toString(ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml"),
+    val expectedResponse: String = IOUtils.toString(ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml"),
       StandardCharsets.UTF_8)
     assertThat(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)))
       .hasContent(expectedResponse)
@@ -92,7 +93,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -103,6 +104,10 @@ trait DownloadContract {
       .get(s"/download/$accountId/${messageId.serialize()}")
     .`then`
       .statusCode(SC_UNAUTHORIZED)
+      .header("WWW-Authenticate", "Basic realm=\"simple\", Bearer realm=\"JWT\"")
+      .body("status", equalTo(401))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("No valid authentication methods provided"))
   }
 
   @Test
@@ -111,7 +116,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(ANDRE.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
     server.getProbe(classOf[ACLProbeImpl])
       .replaceRights(path, BOB.asString(), new MailboxACL.Rfc4314Rights(Right.Read, Right.Lookup))
@@ -128,7 +133,7 @@ trait DownloadContract {
       .body
       .asString
 
-    val expectedResponse: String = IOUtils.toString(ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml"),
+    val expectedResponse: String = IOUtils.toString(ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml"),
       StandardCharsets.UTF_8)
     assertThat(new ByteArrayInputStream(response.getBytes(StandardCharsets.UTF_8)))
       .hasContent(expectedResponse)
@@ -140,7 +145,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(ANDRE.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -150,6 +155,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/${messageId.serialize()}")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -158,7 +166,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -167,7 +175,10 @@ trait DownloadContract {
     .when
       .get(s"/download/$ALICE_ACCOUNT_ID/${messageId.serialize}")
     .`then`
-      .statusCode(SC_UNAUTHORIZED)
+      .statusCode(SC_FORBIDDEN)
+      .body("status", equalTo(403))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("You cannot download in others accounts"))
   }
 
   @Test
@@ -176,7 +187,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(ANDRE.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
     server.getProbe(classOf[ACLProbeImpl])
       .replaceRights(path, BOB.asString(), new MailboxACL.Rfc4314Rights(Right.Read, Right.Lookup))
@@ -210,7 +221,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(ANDRE.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -220,6 +231,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/${messageId.serialize()}_3")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -228,7 +242,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     val response = `given`
@@ -260,7 +274,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -280,7 +294,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -300,17 +314,20 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
-    `given`
+    val contentDisposition = `given`
       .basePath("")
       .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
     .when
       .get(s"/download/$accountId/${messageId.serialize()}_3")
     .`then`
       .statusCode(SC_OK)
-      .header("Content-Disposition",  emptyOrNullString())
+      .extract()
+      .header("Content-Disposition")
+
+    assertThat(contentDisposition).isNullOrEmpty()
   }
 
   @Test
@@ -319,7 +336,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -339,17 +356,19 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
-    `given`
+    val contentDisposition = `given`
       .basePath("")
       .header(ACCEPT.toString, ACCEPT_RFC8621_VERSION_HEADER)
     .when
       .get(s"/download/$accountId/${messageId.serialize()}")
     .`then`
       .statusCode(SC_OK)
-      .header("Content-Disposition", emptyOrNullString())
+      .extract().header("Content-Disposition")
+
+    assertThat(contentDisposition).isNullOrEmpty()
   }
 
   @Test
@@ -358,7 +377,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -378,7 +397,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -388,6 +407,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/${messageId.serialize()}_333")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -396,7 +418,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId: MessageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -406,6 +428,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/${messageId.serialize()}_invalid")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -414,7 +439,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
 
     `given`
       .basePath("")
@@ -423,6 +448,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/invalid")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -431,7 +459,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
 
     `given`
       .basePath("")
@@ -440,6 +468,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/${randomMessageId.serialize()}")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -448,7 +479,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
 
     `given`
       .basePath("")
@@ -457,6 +488,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/${randomMessageId.serialize()}_3")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -465,7 +499,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
 
     `given`
       .basePath("")
@@ -474,6 +508,9 @@ trait DownloadContract {
       .get(s"/download/$accountId/${randomMessageId.serialize()}_2")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 
   @Test
@@ -482,7 +519,7 @@ trait DownloadContract {
     server.getProbe(classOf[MailboxProbeImpl]).createMailbox(path)
     val messageId = server.getProbe(classOf[MailboxProbeImpl])
       .appendMessage(BOB.asString, path, AppendCommand.from(
-        ClassLoader.getSystemResourceAsStream("eml/multipart_simple.eml")))
+        ClassLoaderUtils.getSystemResourceAsSharedStream("eml/multipart_simple.eml")))
       .getMessageId
 
     `given`
@@ -492,5 +529,8 @@ trait DownloadContract {
       .get(s"/download/$accountId/${messageId.serialize()}_3_3")
     .`then`
       .statusCode(SC_NOT_FOUND)
+      .body("status", equalTo(404))
+      .body("type", equalTo("about:blank"))
+      .body("detail", equalTo("The resource could not be found"))
   }
 }

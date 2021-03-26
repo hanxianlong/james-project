@@ -19,6 +19,7 @@
 package org.apache.james.jmap.http;
 
 import static org.apache.james.util.FunctionalUtils.negate;
+import static org.apache.james.util.ReactorUtils.DEFAULT_CONCURRENCY;
 
 import java.util.Optional;
 import java.util.function.Function;
@@ -44,7 +45,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
-class DefaultMailboxesProvisioner {
+public class DefaultMailboxesProvisioner {
     private static final Logger LOGGER = LoggerFactory.getLogger(DefaultMailboxesProvisioner.class);
     private final MailboxManager mailboxManager;
     private final SubscriptionManager subscriptionManager;
@@ -52,7 +53,7 @@ class DefaultMailboxesProvisioner {
 
     @Inject
     @VisibleForTesting
-    DefaultMailboxesProvisioner(MailboxManager mailboxManager,
+    public DefaultMailboxesProvisioner(MailboxManager mailboxManager,
                                 SubscriptionManager subscriptionManager,
                                 MetricFactory metricFactory) {
         this.mailboxManager = mailboxManager;
@@ -60,7 +61,7 @@ class DefaultMailboxesProvisioner {
         this.metricFactory = metricFactory;
     }
 
-    Mono<Void> createMailboxesIfNeeded(MailboxSession session) {
+    public Mono<Void> createMailboxesIfNeeded(MailboxSession session) {
         return metricFactory.decorateSupplierWithTimerMetric("JMAP-mailboxes-provisioning",
             () -> {
                 Username username = session.getUser();
@@ -73,7 +74,7 @@ class DefaultMailboxesProvisioner {
 
         return Flux.fromIterable(DefaultMailboxes.DEFAULT_MAILBOXES)
             .map(toMailboxPath(session))
-            .filterWhen(mailboxPath -> mailboxDoesntExist(mailboxPath, session))
+            .filterWhen(mailboxPath -> mailboxDoesntExist(mailboxPath, session), DEFAULT_CONCURRENCY)
             .concatMap(mailboxPath -> Mono.fromRunnable(() -> createMailbox(mailboxPath, session))
                 .subscribeOn(Schedulers.elastic()))
             .then();

@@ -49,7 +49,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.emptyOrNullString;
 import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasEntry;
@@ -57,12 +56,14 @@ import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
 import static org.hamcrest.collection.IsMapWithSize.anEmptyMap;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.Date;
 import java.util.List;
@@ -78,6 +79,7 @@ import org.apache.james.GuiceJamesServer;
 import org.apache.james.core.Domain;
 import org.apache.james.core.Username;
 import org.apache.james.core.quota.QuotaSizeLimit;
+import org.apache.james.events.Event;
 import org.apache.james.jmap.AccessToken;
 import org.apache.james.jmap.HttpJmapAuthentication;
 import org.apache.james.jmap.JmapCommonRequests;
@@ -88,8 +90,7 @@ import org.apache.james.junit.categories.BasicFeature;
 import org.apache.james.mailbox.DefaultMailboxes;
 import org.apache.james.mailbox.FlagsBuilder;
 import org.apache.james.mailbox.Role;
-import org.apache.james.mailbox.events.Event;
-import org.apache.james.mailbox.events.MailboxListener;
+import org.apache.james.mailbox.events.MailboxEvents.Added;
 import org.apache.james.mailbox.exception.MailboxException;
 import org.apache.james.mailbox.model.AttachmentId;
 import org.apache.james.mailbox.model.AttachmentMetadata;
@@ -120,7 +121,6 @@ import org.apache.james.utils.TestIMAPClient;
 import org.apache.mailet.Mail;
 import org.apache.mailet.base.test.FakeMail;
 import org.assertj.core.api.SoftAssertions;
-import org.awaitility.Duration;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -248,7 +248,7 @@ public abstract class SetMessagesMethodTest {
             .body(ARGUMENTS + ".notDestroyed", hasEntry(equalTo(unknownMailboxMessageId), Matchers.allOf(
                 hasEntry("type", "notFound"),
                 hasEntry("description", "The message " + unknownMailboxMessageId + " can't be found"),
-                hasEntry(equalTo("properties"), is(emptyOrNullString()))))
+                hasEntry(equalTo("properties"), is(nullValue()))))
             );
     }
 
@@ -270,7 +270,7 @@ public abstract class SetMessagesMethodTest {
             .body(ARGUMENTS + ".notDestroyed", hasEntry(equalTo(messageId), Matchers.allOf(
                 hasEntry("type", "notFound"),
                 hasEntry("description", "The message " + messageId + " can't be found"),
-                hasEntry(equalTo("properties"), is(emptyOrNullString()))))
+                hasEntry(equalTo("properties"), is(nullValue()))))
             );
     }
 
@@ -356,7 +356,7 @@ public abstract class SetMessagesMethodTest {
             .body(NAME, equalTo("messagesSet"))
             .body(ARGUMENTS + ".destroyed", hasSize(2))
             .body(ARGUMENTS + ".notDestroyed", aMapWithSize(1))
-            .body(ARGUMENTS + ".destroyed", contains(message1.getMessageId().serialize(), message3.getMessageId().serialize()))
+            .body(ARGUMENTS + ".destroyed", containsInAnyOrder(message1.getMessageId().serialize(), message3.getMessageId().serialize()))
             .body(ARGUMENTS + ".notDestroyed", hasEntry(equalTo(missingMessageId), Matchers.allOf(
                 hasEntry("type", "notFound"),
                 hasEntry("description", "The message " + missingMessageId + " can't be found")))
@@ -1070,10 +1070,10 @@ public abstract class SetMessagesMethodTest {
             .body(ARGUMENTS + ".created", aMapWithSize(1))
             // assert server-set attributes are returned
             .body(ARGUMENTS + ".created", hasEntry(equalTo(messageCreationId), Matchers.allOf(
-                hasEntry(equalTo("id"), not(is(emptyOrNullString()))),
-                hasEntry(equalTo("blobId"), not(is(emptyOrNullString()))),
-                hasEntry(equalTo("threadId"), not(is(emptyOrNullString()))),
-                hasEntry(equalTo("size"), not(is(emptyOrNullString())))
+                hasEntry(equalTo("id"), not(is(nullValue()))),
+                hasEntry(equalTo("blobId"), not(is(nullValue()))),
+                hasEntry(equalTo("threadId"), not(is(nullValue()))),
+                hasEntry(equalTo("size"), not(is(nullValue())))
             )))
             // assert that message FLAGS are all unset
             .body(ARGUMENTS + ".created", hasEntry(equalTo(messageCreationId), Matchers.allOf(
@@ -1181,18 +1181,18 @@ public abstract class SetMessagesMethodTest {
         given()
             .header("Authorization", accessToken.asString())
             .body(String.format("[[\"setMessages\", {\"update\": {" +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]}, " +
-                    "  \"%s\" : { \"mailboxIds\": [" + mailboxId.serialize() + "]} " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]}, " +
+                    "  \"%s\" : { \"mailboxIds\": [\"" + mailboxId.serialize() + "\"]} " +
                     "} }, \"#0\"]]", serializedMessageId1, serializedMessageId2, serializedMessageId3,
                 serializedMessageId4, serializedMessageId5, serializedMessageId6,
                 serializedMessageId7, serializedMessageId8, serializedMessageId9,
@@ -1614,7 +1614,7 @@ public abstract class SetMessagesMethodTest {
         }
 
         calmlyAwait
-            .pollDelay(Duration.FIVE_HUNDRED_MILLISECONDS)
+            .pollDelay(Duration.ofMillis(500))
             .atMost(30, TimeUnit.SECONDS).until(() -> hasANewMailWithBody(accessToken, body));
     }
 
@@ -2360,7 +2360,7 @@ public abstract class SetMessagesMethodTest {
             .post("/jmap");
 
         calmlyAwait
-            .pollDelay(Duration.FIVE_HUNDRED_MILLISECONDS)
+            .pollDelay(Duration.ofMillis(500))
             .atMost(30, TimeUnit.SECONDS).until(() -> isAnyMessageFoundInRecipientsMailboxes(bobAccessToken));
     }
 
@@ -2414,7 +2414,7 @@ public abstract class SetMessagesMethodTest {
             .post("/jmap");
 
         calmlyAwait
-            .pollDelay(Duration.FIVE_HUNDRED_MILLISECONDS)
+            .pollDelay(Duration.ofMillis(500))
             .atMost(30, TimeUnit.SECONDS).until(() -> isAnyMessageFoundInRecipientsMailboxes(bobAccessToken));
     }
 
@@ -2568,7 +2568,7 @@ public abstract class SetMessagesMethodTest {
             "]";
 
         EventCollector eventCollector = new EventCollector();
-        jmapServer.getProbe(JmapGuiceProbe.class).addMailboxListener(eventCollector);
+        jmapServer.getProbe(JmapGuiceProbe.class).addEventListener(eventCollector);
 
         String messageId = with()
             .header("Authorization", accessToken.asString())
@@ -2587,10 +2587,10 @@ public abstract class SetMessagesMethodTest {
     }
 
     private boolean isAddedToOutboxEvent(String messageId, Event event, String outboxId) {
-        if (!(event instanceof MailboxListener.Added)) {
+        if (!(event instanceof Added)) {
             return false;
         }
-        MailboxListener.Added added = (MailboxListener.Added) event;
+        Added added = (Added) event;
         return added.getMailboxId().serialize().equals(outboxId)
             && added.getUids().size() == 1
             && added.getMetaData(added.getUids().iterator().next()).getMessageId().serialize().equals(messageId);
@@ -2794,7 +2794,7 @@ public abstract class SetMessagesMethodTest {
             .body(ARGUMENTS + ".created[\"" + messageCreationId + "\"].from.email", equalTo(ALIAS_OF_USERNAME_MAIL));
 
         calmlyAwait
-            .pollDelay(Duration.FIVE_HUNDRED_MILLISECONDS)
+            .pollDelay(Duration.ofMillis(500))
             .atMost(30, TimeUnit.SECONDS).until(() -> isAnyMessageFoundInRecipientsMailboxes(bobAccessToken));
 
     }
@@ -2838,7 +2838,7 @@ public abstract class SetMessagesMethodTest {
             .body(ARGUMENTS + ".created[\"" + messageCreationId + "\"].from.email", equalTo(alias));
 
         calmlyAwait
-            .pollDelay(Duration.FIVE_HUNDRED_MILLISECONDS)
+            .pollDelay(Duration.ofMillis(500))
             .atMost(30, TimeUnit.SECONDS).until(() -> isAnyMessageFoundInRecipientsMailboxes(bobAccessToken));
     }
 
@@ -4050,7 +4050,7 @@ public abstract class SetMessagesMethodTest {
             .body(ARGUMENTS + ".notCreated", hasKey(messageCreationId))
             .body(notCreatedPath + ".type", equalTo("invalidProperties"))
             .body(notCreatedPath + ".properties", contains("attachments"))
-            .body(notCreatedPath + ".attachmentsNotFound", contains("brokenId1", "brokenId2"))
+            .body(notCreatedPath + ".attachmentsNotFound", containsInAnyOrder("brokenId1", "brokenId2"))
             .body(ARGUMENTS + ".created", aMapWithSize(0));
     }
 
@@ -4709,7 +4709,7 @@ public abstract class SetMessagesMethodTest {
             .body(NAME, equalTo("messages"))
             .body(ARGUMENTS + ".list", hasSize(1))
             .body(firstMessage + ".textBody", equalTo("Test body, plain text version"))
-            .body(firstMessage + ".htmlBody", is(emptyOrNullString()))
+            .body(firstMessage + ".htmlBody", is(nullValue()))
             .body(firstMessage + ".attachments", hasSize(1))
             .body(firstAttachment + ".type", equalTo("text/html; charset=UTF-8"))
             .body(firstAttachment + ".size", equalTo((int) uploadedAttachment.getSize()))
@@ -4793,8 +4793,8 @@ public abstract class SetMessagesMethodTest {
             .log().ifValidationFails()
             .body(NAME, equalTo("messages"))
             .body(ARGUMENTS + ".list", hasSize(1))
-            .body(firstMessage + ".textBody", is(emptyOrNullString()))
-            .body(firstMessage + ".htmlBody", is(emptyOrNullString()))
+            .body(firstMessage + ".textBody", is(nullValue()))
+            .body(firstMessage + ".htmlBody", is(nullValue()))
             .body(firstMessage + ".attachments", hasSize(1))
             .body(firstAttachment + ".type", equalTo("text/plain; charset=UTF-8"))
             .body(firstAttachment + ".size", equalTo((int) uploadedAttachment.getSize()))
@@ -4919,7 +4919,7 @@ public abstract class SetMessagesMethodTest {
 
     private Matcher<Map<? extends String, ? extends String>> allHeadersMatcher(ImmutableList<String> expectedHeaders) {
         return Matchers.allOf(expectedHeaders.stream()
-                .map((String header) -> hasEntry(equalTo(header), not(is(emptyOrNullString()))))
+                .map((String header) -> hasEntry(equalTo(header), not(is(nullValue()))))
                 .collect(Collectors.toList()));
     }
 
@@ -5848,7 +5848,7 @@ public abstract class SetMessagesMethodTest {
             .body(ARGUMENTS + ".list", hasSize(1))
             .body(message + ".attachments", hasSize(1))
             .body(firstAttachment + ".type", equalTo("text/calendar; method=REPLY; charset=UTF-8"))
-            .body(firstAttachment + ".blobId", not(is(emptyOrNullString())));
+            .body(firstAttachment + ".blobId", not(is(nullValue())));
     }
 
     @Test

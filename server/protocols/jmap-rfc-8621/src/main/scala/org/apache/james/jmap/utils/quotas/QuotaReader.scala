@@ -21,9 +21,9 @@ package org.apache.james.jmap.utils.quotas
 
 import javax.inject.Inject
 import org.apache.james.core.quota.{QuotaLimitValue, QuotaUsageValue}
-import org.apache.james.jmap.mail._
-import org.apache.james.jmap.model.UnsignedInt
-import org.apache.james.jmap.model.UnsignedInt.UnsignedInt
+import org.apache.james.jmap.core.UnsignedInt
+import org.apache.james.jmap.core.UnsignedInt.UnsignedInt
+import org.apache.james.jmap.mail.{Quota, QuotaId, QuotaRoot, Quotas, Value}
 import org.apache.james.mailbox.exception.MailboxException
 import org.apache.james.mailbox.model.{Quota => ModelQuota}
 import org.apache.james.mailbox.quota.QuotaManager
@@ -31,12 +31,15 @@ import reactor.core.scala.publisher.SMono
 
 class QuotaReader @Inject() (quotaManager: QuotaManager) {
   @throws[MailboxException]
-  def retrieveQuotas(quotaRoot: QuotaRoot): SMono[Quotas] =
+  def retrieveQuotas(quotaRoot: QuotaRoot): SMono[Quotas] = {
+    val quotaId = QuotaId.fromQuotaRoot(quotaRoot)
+    val quotas = quotaManager.getQuotas(quotaRoot.toModel)
     SMono.just(Quotas.from(
-      QuotaId.fromQuotaRoot(quotaRoot),
+      quotaId,
       Quota.from(Map(
-        Quotas.Storage -> quotaToValue(quotaManager.getStorageQuota(quotaRoot.toModel)),
-        Quotas.Message -> quotaToValue(quotaManager.getMessageQuota(quotaRoot.toModel))))))
+        Quotas.Storage -> quotaToValue(quotas.getStorageQuota),
+        Quotas.Message -> quotaToValue(quotas.getMessageQuota)))))
+  }
 
   private def quotaToValue[T <: QuotaLimitValue[T], U <: QuotaUsageValue[U, T]](quota: ModelQuota[T, U]): Value =
     Value(

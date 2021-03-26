@@ -19,7 +19,6 @@
 
 package org.apache.james.mailbox;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -30,16 +29,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import javax.mail.Flags;
+import javax.mail.internet.SharedInputStream;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.james.mailbox.MailboxManager.MessageCapabilities;
 import org.apache.james.mailbox.exception.MailboxException;
 import org.apache.james.mailbox.exception.UnsupportedCriteriaException;
 import org.apache.james.mailbox.exception.UnsupportedRightException;
+import org.apache.james.mailbox.model.ByteContent;
 import org.apache.james.mailbox.model.ComposedMessageId;
 import org.apache.james.mailbox.model.ComposedMessageIdWithMetaData;
+import org.apache.james.mailbox.model.Content;
 import org.apache.james.mailbox.model.FetchGroup;
 import org.apache.james.mailbox.model.Mailbox;
 import org.apache.james.mailbox.model.MailboxACL;
@@ -113,7 +115,7 @@ public interface MessageManager {
      * @throws MailboxException
      *             when search fails for other reasons
      */
-    Stream<MessageUid> search(SearchQuery searchQuery, MailboxSession mailboxSession) throws MailboxException;
+    Publisher<MessageUid> search(SearchQuery searchQuery, MailboxSession mailboxSession) throws MailboxException;
 
     /**
      * Expunges messages in the given range from this mailbox by first retrieving the messages to be deleted
@@ -148,15 +150,21 @@ public interface MessageManager {
 
     class AppendResult {
         private final ComposedMessageId id;
+        private final Long size;
         private final Optional<List<MessageAttachmentMetadata>> messageAttachments;
 
-        public AppendResult(ComposedMessageId id, Optional<List<MessageAttachmentMetadata>> messageAttachments) {
+        public AppendResult(ComposedMessageId id, Long size, Optional<List<MessageAttachmentMetadata>> messageAttachments) {
             this.id = id;
+            this.size = size;
             this.messageAttachments = messageAttachments;
         }
 
         public ComposedMessageId getId() {
             return id;
+        }
+
+        public Long getSize() {
+            return size;
         }
 
         public List<MessageAttachmentMetadata> getMessageAttachments() {
@@ -212,7 +220,11 @@ public interface MessageManager {
             return builder().build(message);
         }
 
-        public static AppendCommand from(InputStream message) {
+        public static AppendCommand from(Content message) {
+            return builder().build(message);
+        }
+
+        public static AppendCommand from(SharedInputStream message) {
             return builder().build(message);
         }
 
@@ -237,6 +249,11 @@ public interface MessageManager {
                 return this;
             }
 
+            public Builder withInternalDate(Optional<Date> date) {
+                this.internalDate = date;
+                return this;
+            }
+
             public Builder isRecent(boolean recent) {
                 this.isRecent = Optional.of(recent);
                 return this;
@@ -250,7 +267,7 @@ public interface MessageManager {
                 return isRecent(false);
             }
 
-            public AppendCommand build(InputStream msgIn) {
+            public AppendCommand build(Content msgIn) {
                 return new AppendCommand(
                     msgIn,
                     internalDate.orElse(new Date()),
@@ -258,8 +275,26 @@ public interface MessageManager {
                     flags.orElse(new Flags()));
             }
 
+            public AppendCommand build(SharedInputStream msgIn) {
+                return build(new Content() {
+                    @Override
+                    public InputStream getInputStream() {
+                        return msgIn.newStream(0, -1);
+                    }
+
+                    @Override
+                    public long size() throws MailboxException {
+                        try {
+                            return IOUtils.consume(getInputStream());
+                        } catch (IOException e) {
+                            throw new MailboxException("Cannot compute content size", e);
+                        }
+                    }
+                });
+            }
+
             public AppendCommand build(byte[] msgIn) {
-                return build(new ByteArrayInputStream(msgIn));
+                return build(new ByteContent(msgIn));
             }
 
             public AppendCommand build(String msgIn) {
@@ -279,19 +314,19 @@ public interface MessageManager {
             return new Builder();
         }
 
-        private final InputStream msgIn;
+        private final Content msgIn;
         private final Date internalDate;
         private final boolean isRecent;
         private final Flags flags;
 
-        private AppendCommand(InputStream msgIn, Date internalDate, boolean isRecent, Flags flags) {
+        private AppendCommand(Content msgIn, Date internalDate, boolean isRecent, Flags flags) {
             this.msgIn = msgIn;
             this.internalDate = internalDate;
             this.isRecent = isRecent;
             this.flags = flags;
         }
 
-        public InputStream getMsgIn() {
+        public Content getMsgIn() {
             return msgIn;
         }
 

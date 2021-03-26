@@ -34,7 +34,6 @@ import java.util.Optional;
 
 import javax.mail.Flags;
 import javax.mail.Flags.Flag;
-import javax.mail.util.SharedByteArrayInputStream;
 
 import org.apache.james.core.Username;
 import org.apache.james.mailbox.FlagsBuilder;
@@ -42,6 +41,7 @@ import org.apache.james.mailbox.MessageManager.FlagsUpdateMode;
 import org.apache.james.mailbox.MessageUid;
 import org.apache.james.mailbox.ModSeq;
 import org.apache.james.mailbox.exception.MailboxException;
+import org.apache.james.mailbox.model.ByteContent;
 import org.apache.james.mailbox.model.Mailbox;
 import org.apache.james.mailbox.model.MailboxCounters;
 import org.apache.james.mailbox.model.MailboxPath;
@@ -71,10 +71,11 @@ public abstract class MessageMapperTest {
     private static final int LIMIT = 10;
     private static final int BODY_START = 16;
     private static final UidValidity UID_VALIDITY = UidValidity.of(42);
-    private static final String USER_FLAG = "userFlag";
 
     private static final String CUSTOMS_USER_FLAGS_VALUE = "CustomsFlags";
     private static final Username BENWA = Username.of("benwa");
+
+    protected static final String USER_FLAG = "userFlag";
 
     private MapperProvider mapperProvider;
     protected MessageMapper messageMapper;
@@ -701,7 +702,7 @@ public abstract class MessageMapperTest {
     }
 
     @Test
-    void flagsReplacementShouldReturnAnUpdatedFlagHighlightingTheReplacement() throws MailboxException {
+    protected void flagsReplacementShouldReturnAnUpdatedFlagHighlightingTheReplacement() throws MailboxException {
         saveMessages();
         ModSeq modSeq = messageMapper.getHighestModSeq(benwaInboxMailbox);
         Optional<UpdatedFlags> updatedFlags = messageMapper.updateFlags(benwaInboxMailbox, message1.getUid(),
@@ -709,6 +710,7 @@ public abstract class MessageMapperTest {
         assertThat(updatedFlags)
             .contains(UpdatedFlags.builder()
                 .uid(message1.getUid())
+                .messageId(message1.getMessageId())
                 .modSeq(modSeq.next())
                 .oldFlags(new Flags())
                 .newFlags(new Flags(Flags.Flag.FLAGGED))
@@ -716,13 +718,14 @@ public abstract class MessageMapperTest {
     }
 
     @Test
-    void flagsAdditionShouldReturnAnUpdatedFlagHighlightingTheAddition() throws MailboxException {
+    protected void flagsAdditionShouldReturnAnUpdatedFlagHighlightingTheAddition() throws MailboxException {
         saveMessages();
         messageMapper.updateFlags(benwaInboxMailbox, message1.getUid(), new FlagsUpdateCalculator(new Flags(Flags.Flag.FLAGGED), FlagsUpdateMode.REPLACE));
         ModSeq modSeq = messageMapper.getHighestModSeq(benwaInboxMailbox);
         assertThat(messageMapper.updateFlags(benwaInboxMailbox, message1.getUid(), new FlagsUpdateCalculator(new Flags(Flags.Flag.SEEN), FlagsUpdateMode.ADD)))
             .contains(UpdatedFlags.builder()
                     .uid(message1.getUid())
+                    .messageId(message1.getMessageId())
                     .modSeq(modSeq.next())
                     .oldFlags(new Flags(Flags.Flag.FLAGGED))
                     .newFlags(new FlagsBuilder().add(Flags.Flag.SEEN, Flags.Flag.FLAGGED).build())
@@ -748,7 +751,7 @@ public abstract class MessageMapperTest {
     }
 
     @Test
-    void flagsRemovalShouldReturnAnUpdatedFlagHighlightingTheRemoval() throws MailboxException {
+    protected void flagsRemovalShouldReturnAnUpdatedFlagHighlightingTheRemoval() throws MailboxException {
         saveMessages();
         messageMapper.updateFlags(benwaInboxMailbox, message1.getUid(), new FlagsUpdateCalculator(new FlagsBuilder().add(Flags.Flag.FLAGGED, Flags.Flag.SEEN).build(), FlagsUpdateMode.REPLACE));
         ModSeq modSeq = messageMapper.getHighestModSeq(benwaInboxMailbox);
@@ -756,6 +759,7 @@ public abstract class MessageMapperTest {
             .contains(
                 UpdatedFlags.builder()
                     .uid(message1.getUid())
+                    .messageId(message1.getMessageId())
                     .modSeq(modSeq.next())
                     .oldFlags(new FlagsBuilder().add(Flags.Flag.SEEN, Flags.Flag.FLAGGED).build())
                     .newFlags(new Flags(Flags.Flag.FLAGGED))
@@ -874,13 +878,14 @@ public abstract class MessageMapperTest {
     }
 
     @Test
-    void userFlagsUpdateShouldReturnCorrectUpdatedFlags() throws Exception {
+    protected void userFlagsUpdateShouldReturnCorrectUpdatedFlags() throws Exception {
         saveMessages();
         ModSeq modSeq = messageMapper.getHighestModSeq(benwaInboxMailbox);
         assertThat(messageMapper.updateFlags(benwaInboxMailbox, message1.getUid(), new FlagsUpdateCalculator(new Flags(USER_FLAG), FlagsUpdateMode.ADD)))
             .contains(
                 UpdatedFlags.builder()
                     .uid(message1.getUid())
+                    .messageId(message1.getMessageId())
                     .modSeq(modSeq.next())
                     .oldFlags(new Flags())
                     .newFlags(new Flags(USER_FLAG))
@@ -888,7 +893,7 @@ public abstract class MessageMapperTest {
     }
 
     @Test
-    void userFlagsUpdateShouldReturnCorrectUpdatedFlagsWhenNoop() throws Exception {
+    protected void userFlagsUpdateShouldReturnCorrectUpdatedFlagsWhenNoop() throws Exception {
         saveMessages();
 
         assertThat(
@@ -897,6 +902,7 @@ public abstract class MessageMapperTest {
             .contains(
                 UpdatedFlags.builder()
                     .uid(message1.getUid())
+                    .messageId(message1.getMessageId())
                     .modSeq(message1.getModSeq())
                     .oldFlags(new Flags())
                     .newFlags(new Flags())
@@ -1250,6 +1256,6 @@ public abstract class MessageMapperTest {
     }
     
     private MailboxMessage createMessage(Mailbox mailbox, MessageId messageId, String content, int bodyStart, PropertyBuilder propertyBuilder) {
-        return new SimpleMailboxMessage(messageId, new Date(), content.length(), bodyStart, new SharedByteArrayInputStream(content.getBytes()), new Flags(), propertyBuilder.build(), mailbox.getMailboxId());
+        return new SimpleMailboxMessage(messageId, new Date(), content.length(), bodyStart, new ByteContent(content.getBytes()), new Flags(), propertyBuilder.build(), mailbox.getMailboxId());
     }
 }

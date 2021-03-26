@@ -49,7 +49,6 @@ import org.apache.james.protocols.smtp.hook.HookResult;
 import org.apache.james.protocols.smtp.hook.HookResultHook;
 import org.apache.james.protocols.smtp.hook.MessageHook;
 import org.apache.james.server.core.MailImpl;
-import org.apache.james.server.core.MimeMessageCopyOnWriteProxy;
 import org.apache.james.server.core.MimeMessageInputStream;
 import org.apache.james.server.core.MimeMessageInputStreamSource;
 import org.apache.mailet.Mail;
@@ -100,10 +99,8 @@ public class DataLineJamesMessageHookHandler implements DataLineFilter, Extensib
                 // store mail in the session so we can be sure it get disposed later
                 session.setAttachment(SMTPConstants.MAIL, mail, State.Transaction);
 
-                MimeMessageCopyOnWriteProxy mimeMessageCopyOnWriteProxy = null;
                 try {
-                    mimeMessageCopyOnWriteProxy = new MimeMessageCopyOnWriteProxy(mmiss);
-                    mail.setMessage(mimeMessageCopyOnWriteProxy);
+                    mail.setMessageContent(mmiss);
 
                     Response response = processExtensions(session, mail);
 
@@ -115,7 +112,6 @@ public class DataLineJamesMessageHookHandler implements DataLineFilter, Extensib
                     LOGGER.info("Unexpected error handling DATA stream", e);
                     return new SMTPResponse(SMTPRetCode.LOCAL_ERROR, "Unexpected error handling DATA stream.");
                 } finally {
-                    LifecycleUtil.dispose(mimeMessageCopyOnWriteProxy);
                     LifecycleUtil.dispose(mmiss);
                     LifecycleUtil.dispose(mail);
                 }

@@ -21,13 +21,16 @@ package org.apache.james;
 
 import static org.apache.james.CassandraJamesServerMain.REQUIRE_TASK_MANAGER_MODULE;
 
+import org.apache.james.data.UsersRepositoryModuleChooser;
 import org.apache.james.modules.DistributedTaskManagerModule;
 import org.apache.james.modules.DistributedTaskSerializationModule;
 import org.apache.james.modules.blobstore.BlobStoreCacheModulesChooser;
 import org.apache.james.modules.blobstore.BlobStoreConfiguration;
 import org.apache.james.modules.blobstore.BlobStoreModulesChooser;
+import org.apache.james.modules.data.CassandraUsersRepositoryModule;
+import org.apache.james.modules.event.JMAPEventBusModule;
 import org.apache.james.modules.event.RabbitMQEventBusModule;
-import org.apache.james.modules.rabbitmq.RabbitMQModule;
+import org.apache.james.modules.queue.rabbitmq.RabbitMQModule;
 import org.apache.james.modules.server.JMXServerModule;
 import org.apache.james.modules.server.RabbitMailQueueRoutesModule;
 
@@ -40,6 +43,7 @@ public class CassandraRabbitMQJamesServerMain implements JamesServerMain {
             .override(Modules.combine(REQUIRE_TASK_MANAGER_MODULE, new DistributedTaskManagerModule()))
             .with(new RabbitMQModule(),
                 new RabbitMailQueueRoutesModule(),
+                new JMAPEventBusModule(),
                 new RabbitMQEventBusModule(),
                 new DistributedTaskSerializationModule());
 
@@ -63,6 +67,8 @@ public class CassandraRabbitMQJamesServerMain implements JamesServerMain {
             .combineWith(MODULES)
             .combineWith(BlobStoreModulesChooser.chooseModules(blobStoreConfiguration))
             .combineWith(BlobStoreCacheModulesChooser.chooseModules(blobStoreConfiguration))
-            .combineWith(SearchModuleChooser.chooseModules(searchConfiguration));
+            .combineWith(SearchModuleChooser.chooseModules(searchConfiguration))
+            .combineWith(new UsersRepositoryModuleChooser(new CassandraUsersRepositoryModule())
+                .chooseModules(configuration.getUsersRepositoryImplementation()));
     }
 }
